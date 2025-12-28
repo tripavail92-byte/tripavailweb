@@ -1,0 +1,44 @@
+{
+  "name": "tripavail",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TripAvail - Two-sided travel marketplace platform",
+  "scripts": {
+    "dev": "pnpm --parallel --stream run dev",
+    "build": "pnpm --stream -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "pnpm -r run clean && rm -rf node_modules",
+    "prepare": "husky",
+    "openapi:export": "pnpm --filter backend run openapi:export",
+    "openapi:types": "openapi-typescript backend/openapi/openapi.json -o shared/src/types/api.ts"
+  },
+  "keywords": [
+    "travel",
+    "marketplace",
+    "booking",
+    "monorepo"
+  ],
+  "author": "TripAvail Team",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.50.1",
+    "@typescript-eslint/parser": "^8.50.1",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "openapi-typescript": "^6.7.0",
+    "prettier": "^3.7.4",
+    "typescript": "^5.3.0"
+  }
+}

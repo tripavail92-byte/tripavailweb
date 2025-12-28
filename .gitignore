@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist
+build
+.next
+out
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Exclude user Downloads and other large folders
+Downloads/
+*.exe
+*.msi
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.iso
+*.dmg
+
+# Prisma
+# NOTE: Prisma migration SQL files MUST be committed.
+# (Keeping them in git is required for reliable deploys and reproducible DB state.)
+
+# Generated OpenAPI TypeScript types (generated locally/CI; avoid noisy diffs)
+shared/src/types/api.ts
+web/src/lib/api-types.ts
+
+# Temp files
+*.tmp
+.cache

@@ -1,0 +1,2995 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["App"]
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "operationId": "HealthController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          }
+        },
+        "summary": "Basic health check",
+        "tags": ["health"]
+      }
+    },
+    "/v1/health/ready": {
+      "get": {
+        "operationId": "HealthController_getReadiness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Service is ready"
+          },
+          "503": {
+            "description": "Service is not ready"
+          }
+        },
+        "summary": "Readiness check with dependencies",
+        "tags": ["health"]
+      }
+    },
+    "/v1/auth/start": {
+      "post": {
+        "operationId": "AuthController_startOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OTP created and sent"
+          }
+        },
+        "summary": "Start OTP flow (phone/email)",
+        "tags": ["auth"]
+      }
+    },
+    "/v1/auth/verify": {
+      "post": {
+        "operationId": "AuthController_verifyOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns access/refresh tokens"
+          }
+        },
+        "summary": "Verify OTP and login/upsert user",
+        "tags": ["auth"]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refresh token",
+        "tags": ["auth"]
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current authenticated user",
+        "tags": ["auth"]
+      }
+    },
+    "/v1/partners/start": {
+      "post": {
+        "operationId": "PartnersController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPartnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start partner onboarding (hotel manager or tour operator)",
+        "tags": ["partners"]
+      }
+    },
+    "/v1/partners/me": {
+      "get": {
+        "operationId": "PartnersController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List provider profiles for current user",
+        "tags": ["partners"]
+      }
+    },
+    "/v1/provider-onboarding/start": {
+      "post": {
+        "operationId": "ProviderOnboardingController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartOnboardingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Onboarding started"
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start provider onboarding flow",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/step": {
+      "patch": {
+        "operationId": "ProviderOnboardingController_updateStep",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStepDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Step updated"
+          },
+          "400": {
+            "description": "Invalid step or data"
+          },
+          "404": {
+            "description": "Onboarding not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update onboarding step progress",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/submit": {
+      "post": {
+        "operationId": "ProviderOnboardingController_submit",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submitted for review"
+          },
+          "400": {
+            "description": "Incomplete steps"
+          },
+          "404": {
+            "description": "Onboarding not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit onboarding for admin review",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/status": {
+      "get": {
+        "operationId": "ProviderOnboardingController_getStatus",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Onboarding status"
+          },
+          "404": {
+            "description": "Onboarding not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get onboarding status and progress",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/list": {
+      "get": {
+        "operationId": "ProviderOnboardingController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User onboardings"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all onboardings for current user",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/hotel/step-2-basics": {
+      "post": {
+        "operationId": "ProviderOnboardingController_hotelStep2Basics",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelStep2BasicsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Hotel basics saved"
+          },
+          "400": {
+            "description": "Invalid data or step sequence"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 2: Submit hotel basics (name, type, rating, description)",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/hotel/step-3-location": {
+      "post": {
+        "operationId": "ProviderOnboardingController_hotelStep3Location",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelStep3LocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Location details saved"
+          },
+          "400": {
+            "description": "Invalid data or step sequence"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 3: Submit hotel location (address, coordinates)",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/hotel/step-4-rooms": {
+      "post": {
+        "operationId": "ProviderOnboardingController_hotelStep4Rooms",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelStep4RoomsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Room types saved"
+          },
+          "400": {
+            "description": "Invalid data or step sequence"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 4: Submit room types (capacity, pricing, inventory)",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/hotel/step-5-amenities": {
+      "post": {
+        "operationId": "ProviderOnboardingController_hotelStep5Amenities",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelStep5AmenitiesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Amenities selected"
+          },
+          "400": {
+            "description": "Invalid amenity IDs or step sequence"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 5: Select amenities from master list",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/hotel/step-6-policies": {
+      "post": {
+        "operationId": "ProviderOnboardingController_hotelStep6Policies",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelStep6PoliciesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Policies saved"
+          },
+          "400": {
+            "description": "Invalid data or step sequence"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 6: Submit policies (cancellation, payment, check-in/out, rules)",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/provider-onboarding/{providerId}/hotel/step-7-review": {
+      "post": {
+        "operationId": "ProviderOnboardingController_hotelStep7Review",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelStep7ReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Hotel listing created successfully"
+          },
+          "400": {
+            "description": "Terms not accepted or incomplete steps"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 7: Review & submit - creates Listing + Rooms",
+        "tags": ["provider-onboarding"]
+      }
+    },
+    "/v1/kyc/{providerId}/upload-url": {
+      "post": {
+        "description": "Generates a pre-signed URL for uploading KYC documents. The URL expires after 15 minutes.",
+        "operationId": "KycController_generateUploadUrl",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Generate signed URL for document upload",
+        "tags": ["KYC"]
+      }
+    },
+    "/v1/kyc/{providerId}/confirm-upload": {
+      "post": {
+        "description": "Confirms that a document has been successfully uploaded to the signed URL.",
+        "operationId": "KycController_confirmUpload",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm document upload completion",
+        "tags": ["KYC"]
+      }
+    },
+    "/v1/kyc/{providerId}/documents": {
+      "get": {
+        "description": "Retrieves all uploaded KYC documents for the specified provider.",
+        "operationId": "KycController_getProviderDocuments",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all KYC documents for provider",
+        "tags": ["KYC"]
+      }
+    },
+    "/v1/kyc/{providerId}/status": {
+      "get": {
+        "description": "Returns KYC status including required documents, uploaded documents, and missing documents.",
+        "operationId": "KycController_getKycStatus",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get KYC completion status",
+        "tags": ["KYC"]
+      }
+    },
+    "/v1/kyc/{providerId}/documents/{documentId}": {
+      "get": {
+        "description": "Retrieves details of a specific KYC document.",
+        "operationId": "KycController_getDocument",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get specific document details",
+        "tags": ["KYC"]
+      },
+      "delete": {
+        "description": "Deletes a KYC document. Only allowed if document has not been reviewed yet.",
+        "operationId": "KycController_deleteDocument",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a KYC document",
+        "tags": ["KYC"]
+      }
+    },
+    "/v1/admin/kyc/pending": {
+      "get": {
+        "operationId": "AdminController_getPendingDocuments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all pending KYC documents for review",
+        "tags": ["admin"]
+      }
+    },
+    "/v1/admin/kyc/{documentId}/review": {
+      "post": {
+        "operationId": "AdminController_reviewDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Review a KYC document (approve/reject)",
+        "tags": ["admin"]
+      }
+    },
+    "/v1/admin/kyc/{documentId}": {
+      "get": {
+        "operationId": "AdminController_getDocumentDetails",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get document details with audit history",
+        "tags": ["admin"]
+      }
+    },
+    "/v1/admin/providers/pending": {
+      "get": {
+        "operationId": "AdminController_getPendingProviders",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": ["HOTEL_MANAGER", "TOUR_OPERATOR"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get providers pending verification",
+        "tags": ["admin"]
+      }
+    },
+    "/v1/admin/audit-logs": {
+      "get": {
+        "operationId": "AdminController_getAuditLogs",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get recent audit logs",
+        "tags": ["admin"]
+      }
+    },
+    "/v1/stays/ping": {
+      "get": {
+        "operationId": "StaysController_ping",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["stays"]
+      }
+    },
+    "/v1/stays": {
+      "get": {
+        "operationId": "StaysController_list",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by provider ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by listing status",
+            "schema": {
+              "type": "string",
+              "enum": ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"]
+            }
+          },
+          {
+            "name": "city",
+            "required": false,
+            "in": "query",
+            "description": "Filter by city",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name (ILIKE)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived listings",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": ["createdAt", "name"]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of stays"
+          }
+        },
+        "summary": "List stay listings",
+        "tags": ["stays"]
+      }
+    },
+    "/v1/stays/{id}": {
+      "get": {
+        "operationId": "StaysController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stay listing detail with amenities"
+          }
+        },
+        "summary": "Get stay listing by id",
+        "tags": ["stays"]
+      }
+    },
+    "/v1/stays/{providerId}/listings": {
+      "post": {
+        "operationId": "StaysController_createStayListing",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stay created in DRAFT status"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create stay listing",
+        "tags": ["stays"]
+      }
+    },
+    "/v1/amenities/ping": {
+      "get": {
+        "operationId": "AmenitiesController_ping",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["amenities"]
+      }
+    },
+    "/v1/amenities": {
+      "get": {
+        "operationId": "AmenitiesController_list",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name (ILIKE)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "default": "name",
+              "type": "string",
+              "enum": ["name", "createdAt"]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "asc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of amenities"
+          }
+        },
+        "summary": "List amenities",
+        "tags": ["amenities"]
+      },
+      "post": {
+        "operationId": "AmenitiesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmenityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Amenity created"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create amenity",
+        "tags": ["amenities"]
+      }
+    },
+    "/v1/amenities/{id}": {
+      "patch": {
+        "operationId": "AmenitiesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAmenityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Amenity updated"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update amenity",
+        "tags": ["amenities"]
+      },
+      "delete": {
+        "operationId": "AmenitiesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Amenity deleted"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete amenity",
+        "tags": ["amenities"]
+      }
+    },
+    "/v1/hotel-packages/ping": {
+      "get": {
+        "operationId": "HotelPackagesController_ping",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages": {
+      "get": {
+        "operationId": "HotelPackagesController_list",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by provider ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"]
+            }
+          },
+          {
+            "name": "templateId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by template ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listingId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by listing ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name (ILIKE)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived packages",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": ["createdAt", "name"]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of hotel packages"
+          }
+        },
+        "summary": "List hotel packages",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/templates": {
+      "get": {
+        "operationId": "HotelPackagesController_templates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of supported hotel package templates"
+          }
+        },
+        "summary": "List hotel package templates",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/{id}": {
+      "get": {
+        "operationId": "HotelPackagesController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hotel package detail with amenities"
+          }
+        },
+        "summary": "Get hotel package by id",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/{providerId}/packages": {
+      "post": {
+        "operationId": "HotelPackagesController_createHotelPackage",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHotelPackageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Hotel package created in DRAFT status"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create hotel package",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/{providerId}/packages/{packageId}/publish": {
+      "post": {
+        "operationId": "HotelPackagesController_publish",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "HotelPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hotel package published"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a hotel package (requires verified provider)",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/{providerId}/packages/{packageId}/pause": {
+      "post": {
+        "operationId": "HotelPackagesController_pause",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "HotelPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hotel package paused"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pause a published hotel package",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/{providerId}/packages/{packageId}/archive": {
+      "post": {
+        "operationId": "HotelPackagesController_archive",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "HotelPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hotel package archived"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a hotel package",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/hotel-packages/{providerId}/packages/{packageId}": {
+      "patch": {
+        "operationId": "HotelPackagesController_update",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "HotelPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHotelPackageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hotel package updated"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a hotel package (DRAFT only)",
+        "tags": ["hotel-packages"]
+      },
+      "delete": {
+        "operationId": "HotelPackagesController_remove",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "HotelPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hotel package deleted"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a hotel package (DRAFT only)",
+        "tags": ["hotel-packages"]
+      }
+    },
+    "/v1/tour-packages/ping": {
+      "get": {
+        "operationId": "TourPackagesController_ping",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages": {
+      "get": {
+        "operationId": "TourPackagesController_list",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by provider ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"]
+            }
+          },
+          {
+            "name": "tripType",
+            "required": false,
+            "in": "query",
+            "description": "Filter by trip type",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name (ILIKE)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived packages",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-based)",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": ["createdAt", "name"]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "description": "Sort order",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tour packages"
+          }
+        },
+        "summary": "List tour packages",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{id}": {
+      "get": {
+        "operationId": "TourPackagesController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tour package detail"
+          }
+        },
+        "summary": "Get tour package by id",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages": {
+      "post": {
+        "operationId": "TourPackagesController_createTourPackage",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTourPackageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tour package created in DRAFT status"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create tour package",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{packageId}/publish": {
+      "post": {
+        "operationId": "TourPackagesController_publish",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "TourPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tour package published"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a tour package (requires verified provider)",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{packageId}/pause": {
+      "post": {
+        "operationId": "TourPackagesController_pause",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "TourPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tour package paused"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pause a published tour package",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{packageId}/archive": {
+      "post": {
+        "operationId": "TourPackagesController_archive",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "description": "TourPackage id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tour package archived"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a tour package",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/step1": {
+      "post": {
+        "operationId": "TourPackagesController_step1TripType",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step1TripTypeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tour package created in DRAFT status"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 1: Set trip type (creates DRAFT package)",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{id}/step2-basics": {
+      "patch": {
+        "operationId": "TourPackagesController_step2Basics",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step2BasicsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 2: Set basics",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{id}/step3-departures": {
+      "put": {
+        "operationId": "TourPackagesController_step3Departures",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step3DeparturesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 3: Set departures (replace)",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{id}/step4-pickups": {
+      "put": {
+        "operationId": "TourPackagesController_step4Pickups",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step4PickupsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 4: Set pickups (replace)",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{id}/step5-highlights": {
+      "patch": {
+        "operationId": "TourPackagesController_step5Highlights",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step5HighlightsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 5: Set highlights",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{id}/step6-itinerary": {
+      "put": {
+        "operationId": "TourPackagesController_step6Itinerary",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step6ItineraryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 6: Set itinerary (replace)",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/tour-packages/{providerId}/packages/{id}/step7-inclusions-exclusions": {
+      "patch": {
+        "operationId": "TourPackagesController_step7InclusionsExclusions",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "description": "ProviderProfile id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Step7InclusionsExclusionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Step 7: Set inclusions and exclusions",
+        "tags": ["tour-packages"]
+      }
+    },
+    "/v1/host/properties/{id}/snapshot": {
+      "get": {
+        "operationId": "HostPropertiesController_snapshot",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Listing id (property)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot for prefilling hotel package creation"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get host property snapshot (property + rooms + amenities + policies)",
+        "tags": ["host-properties"]
+      }
+    }
+  },
+  "info": {
+    "title": "TripAvail API",
+    "description": "Two-sided travel marketplace API",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [
+    {
+      "url": "http://localhost:4100",
+      "description": "Development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "StartOtpDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "StartPartnerDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "StartOnboardingDto": {
+        "type": "object",
+        "properties": {
+          "providerType": {
+            "type": "string",
+            "enum": ["HOTEL_MANAGER", "TOUR_OPERATOR"],
+            "description": "Type of provider to onboard as"
+          }
+        },
+        "required": ["providerType"]
+      },
+      "UpdateStepDto": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "number",
+            "description": "Step number (1-14)",
+            "minimum": 1,
+            "maximum": 14
+          },
+          "data": {
+            "type": "object",
+            "description": "Step data (varies by step)",
+            "additionalProperties": true
+          }
+        },
+        "required": ["step", "data"]
+      },
+      "HotelStep2BasicsDto": {
+        "type": "object",
+        "properties": {
+          "hotelName": {
+            "type": "string",
+            "example": "Sunset Resort & Spa"
+          },
+          "propertyType": {
+            "type": "string",
+            "enum": ["HOTEL", "RESORT", "BED_AND_BREAKFAST", "HOSTEL", "APARTMENT", "VILLA"],
+            "example": "HOTEL"
+          },
+          "starRating": {
+            "type": "number",
+            "example": 5,
+            "description": "Star rating 1-5"
+          },
+          "description": {
+            "type": "string",
+            "example": "Luxury beachfront hotel with world-class amenities"
+          },
+          "contactEmail": {
+            "type": "string",
+            "example": "contact@sunsetresort.com"
+          },
+          "contactPhone": {
+            "type": "string",
+            "example": "+1-555-0123"
+          }
+        },
+        "required": [
+          "hotelName",
+          "propertyType",
+          "starRating",
+          "description",
+          "contactEmail",
+          "contactPhone"
+        ]
+      },
+      "HotelStep3LocationDto": {
+        "type": "object",
+        "properties": {
+          "streetAddress": {
+            "type": "string",
+            "example": "123 Beach Boulevard"
+          },
+          "city": {
+            "type": "string",
+            "example": "Miami"
+          },
+          "stateProvince": {
+            "type": "string",
+            "example": "Florida"
+          },
+          "country": {
+            "type": "string",
+            "example": "United States"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "33139"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 25.7617,
+            "description": "Latitude coordinate"
+          },
+          "longitude": {
+            "type": "number",
+            "example": -80.1918,
+            "description": "Longitude coordinate"
+          }
+        },
+        "required": [
+          "streetAddress",
+          "city",
+          "stateProvince",
+          "country",
+          "postalCode",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "RoomTypeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Deluxe Ocean View"
+          },
+          "capacity": {
+            "type": "number",
+            "example": 2,
+            "description": "Guest capacity"
+          },
+          "bedConfig": {
+            "type": "string",
+            "example": "1 King Bed"
+          },
+          "basePrice": {
+            "type": "number",
+            "example": 299.99,
+            "description": "Base price per night"
+          },
+          "totalUnits": {
+            "type": "number",
+            "example": 20,
+            "description": "Total units available"
+          }
+        },
+        "required": ["name", "capacity", "bedConfig", "basePrice", "totalUnits"]
+      },
+      "HotelStep4RoomsDto": {
+        "type": "object",
+        "properties": {
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoomTypeDto"
+            }
+          }
+        },
+        "required": ["rooms"]
+      },
+      "HotelStep5AmenitiesDto": {
+        "type": "object",
+        "properties": {
+          "amenities": {
+            "example": ["wifi", "pool", "spa", "gym", "restaurant", "parking"],
+            "description": "Array of amenity IDs or names",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["amenities"]
+      },
+      "HotelStep6PoliciesDto": {
+        "type": "object",
+        "properties": {
+          "checkInTime": {
+            "type": "string",
+            "example": "15:00",
+            "description": "Check-in time (24h format)"
+          },
+          "checkOutTime": {
+            "type": "string",
+            "example": "11:00",
+            "description": "Check-out time (24h format)"
+          },
+          "cancellationPolicy": {
+            "type": "string",
+            "enum": ["FLEXIBLE", "MODERATE", "STRICT", "NON_REFUNDABLE"],
+            "example": "FLEXIBLE"
+          },
+          "paymentTerms": {
+            "type": "string",
+            "enum": ["FULL_AT_BOOKING", "DEPOSIT_PLUS_BALANCE", "PAY_AT_ARRIVAL"],
+            "example": "FULL_AT_BOOKING"
+          },
+          "houseRules": {
+            "type": "string",
+            "example": "No smoking. No pets. Quiet hours 10 PM - 7 AM."
+          },
+          "ageRestrictions": {
+            "type": "string",
+            "example": "Guests under 18 must be accompanied by an adult."
+          }
+        },
+        "required": ["checkInTime", "checkOutTime", "cancellationPolicy", "paymentTerms"]
+      },
+      "HotelStep7ReviewDto": {
+        "type": "object",
+        "properties": {
+          "acceptTerms": {
+            "type": "boolean",
+            "example": true,
+            "description": "Accept terms and conditions"
+          },
+          "marketingOptIn": {
+            "type": "boolean",
+            "example": false,
+            "description": "Opt-in for marketing communications"
+          }
+        },
+        "required": ["acceptTerms", "marketingOptIn"]
+      },
+      "GenerateUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "documentType": {
+            "type": "string",
+            "description": "Type of document being uploaded",
+            "enum": [
+              "business_license",
+              "owner_id",
+              "tax_certificate",
+              "tour_license",
+              "insurance",
+              "other"
+            ],
+            "example": "business_license"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original file name",
+            "example": "business_license.pdf"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "File size in bytes",
+            "example": 1048576,
+            "minimum": 1,
+            "maximum": 10485760
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "enum": ["application/pdf", "image/jpeg", "image/png", "image/jpg"],
+            "example": "application/pdf"
+          }
+        },
+        "required": ["documentType", "fileName", "fileSize", "mimeType"]
+      },
+      "ConfirmUploadDto": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "description": "Document ID returned from generate upload URL",
+            "example": "abc123def456"
+          }
+        },
+        "required": ["documentId"]
+      },
+      "ReviewDocumentDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["APPROVE", "REJECT", "REQUEST_RESUBMIT"],
+            "description": "Review action to perform",
+            "example": "APPROVE"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Review notes (required for REJECT/REQUEST_RESUBMIT)",
+            "example": "Document is blurry, please resubmit a clearer version"
+          }
+        },
+        "required": ["action"]
+      },
+      "CreateListingDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Beachfront Villa"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 Ocean Drive"
+          },
+          "city": {
+            "type": "string",
+            "example": "Miami"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 25.790654
+          },
+          "longitude": {
+            "type": "number",
+            "example": -80.1300455
+          },
+          "description": {
+            "type": "string",
+            "example": "Spacious villa with ocean views"
+          },
+          "checkInTime": {
+            "type": "string",
+            "example": "14:00"
+          },
+          "checkOutTime": {
+            "type": "string",
+            "example": "11:00"
+          },
+          "amenityIds": {
+            "example": ["amenity_cuid1", "amenity_cuid2"],
+            "description": "Amenity IDs to attach",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "address",
+          "city",
+          "latitude",
+          "longitude",
+          "description",
+          "checkInTime",
+          "checkOutTime"
+        ]
+      },
+      "CreateAmenityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Free WiFi"
+          },
+          "category": {
+            "type": "string",
+            "example": "Room"
+          }
+        },
+        "required": ["name"]
+      },
+      "UpdateAmenityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Free WiFi"
+          },
+          "category": {
+            "type": "string",
+            "example": "Room"
+          }
+        }
+      },
+      "CreateHotelPackageDto": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "example": "weekend-getaway",
+            "enum": [
+              "weekend-getaway",
+              "honeymoon",
+              "family-vacation",
+              "corporate-retreat",
+              "ski-snow-holiday",
+              "golf-getaway",
+              "staycation",
+              "wellness-spa",
+              "cultural-experience",
+              "food-wine",
+              "anniversary",
+              "eco-nature",
+              "festival-events",
+              "adventure"
+            ]
+          },
+          "listingId": {
+            "type": "string",
+            "example": "listing_cuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Romantic Weekend"
+          },
+          "description": {
+            "type": "string",
+            "example": "Two nights with breakfast and spa access."
+          },
+          "pricePerPerson": {
+            "type": "number",
+            "example": 399.99
+          },
+          "inclusions": {
+            "example": ["Breakfast", "Spa access"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclusions": {
+            "example": ["Flights not included"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availabilityRule": {
+            "type": "string",
+            "example": "WEEKEND_ONLY",
+            "enum": ["WEEKEND_ONLY", "SEASONAL", "FLEXIBLE"]
+          },
+          "amenityIds": {
+            "example": ["amenity_cuid1", "amenity_cuid2"],
+            "description": "Amenity IDs to attach",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "templateId",
+          "listingId",
+          "name",
+          "description",
+          "pricePerPerson",
+          "availabilityRule"
+        ]
+      },
+      "UpdateHotelPackageDto": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "example": "weekend-getaway",
+            "enum": [
+              "weekend-getaway",
+              "honeymoon",
+              "family-vacation",
+              "corporate-retreat",
+              "ski-snow-holiday",
+              "golf-getaway",
+              "staycation",
+              "wellness-spa",
+              "cultural-experience",
+              "food-wine",
+              "anniversary",
+              "eco-nature",
+              "festival-events",
+              "adventure"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Romantic Weekend"
+          },
+          "description": {
+            "type": "string",
+            "example": "Two nights with breakfast and spa access."
+          },
+          "pricePerPerson": {
+            "type": "number",
+            "example": 399.99
+          },
+          "inclusions": {
+            "example": ["Breakfast", "Spa access"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclusions": {
+            "example": ["Flights not included"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availabilityRule": {
+            "type": "string",
+            "example": "WEEKEND_ONLY",
+            "enum": ["WEEKEND_ONLY", "SEASONAL", "FLEXIBLE"]
+          },
+          "amenityIds": {
+            "example": ["amenity_cuid1", "amenity_cuid2"],
+            "description": "Replace amenities on the package (DRAFT only)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateTourPackageDto": {
+        "type": "object",
+        "properties": {
+          "tripType": {
+            "type": "string",
+            "example": "ADVENTURE"
+          },
+          "name": {
+            "type": "string",
+            "example": "Island Hopping"
+          },
+          "description": {
+            "type": "string",
+            "example": "3-day guided tour across islands."
+          },
+          "duration": {
+            "type": "number",
+            "example": 3
+          },
+          "basePrice": {
+            "type": "number",
+            "example": 499.5
+          },
+          "maxSeats": {
+            "type": "number",
+            "example": 20
+          }
+        },
+        "required": ["tripType", "name", "description", "duration", "basePrice", "maxSeats"]
+      },
+      "Step1TripTypeDto": {
+        "type": "object",
+        "properties": {
+          "tripType": {
+            "type": "string",
+            "example": "Adventure"
+          }
+        },
+        "required": ["tripType"]
+      },
+      "Step2BasicsDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Rocky Mountain Hiking Expedition"
+          },
+          "description": {
+            "type": "string",
+            "example": "5-day guided hiking adventure through the Rockies."
+          },
+          "duration": {
+            "type": "number",
+            "example": 5,
+            "description": "Number of days"
+          },
+          "basePrice": {
+            "type": "number",
+            "example": 1299.99
+          },
+          "maxSeats": {
+            "type": "number",
+            "example": 12
+          }
+        },
+        "required": ["name", "description", "duration", "basePrice", "maxSeats"]
+      },
+      "Step3DeparturesDto": {
+        "type": "object",
+        "properties": {
+          "departureDates": {
+            "example": ["2026-02-15", "2026-03-15"],
+            "description": "ISO dates (YYYY-MM-DD)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availableSeats": {
+            "type": "number",
+            "example": 12
+          }
+        },
+        "required": ["departureDates", "availableSeats"]
+      },
+      "PickupInputDto": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "example": "Denver"
+          },
+          "location": {
+            "type": "string",
+            "example": "Denver International Airport - Arrivals Gate"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 39.8561
+          },
+          "longitude": {
+            "type": "number",
+            "example": -104.6737
+          }
+        },
+        "required": ["city", "location", "latitude", "longitude"]
+      },
+      "Step4PickupsDto": {
+        "type": "object",
+        "properties": {
+          "pickups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PickupInputDto"
+            }
+          }
+        },
+        "required": ["pickups"]
+      },
+      "Step5HighlightsDto": {
+        "type": "object",
+        "properties": {
+          "highlights": {
+            "example": ["Summit hike to Eagle Peak", "Alpine Lake swim"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["highlights"]
+      },
+      "ItineraryDayInputDto": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "number",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Arrival and Base Camp Setup"
+          },
+          "description": {
+            "type": "string",
+            "example": "Meet at the trailhead, gear check, and hike to base camp."
+          }
+        },
+        "required": ["day", "title", "description"]
+      },
+      "Step6ItineraryDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItineraryDayInputDto"
+            }
+          }
+        },
+        "required": ["days"]
+      },
+      "Step7InclusionsExclusionsDto": {
+        "type": "object",
+        "properties": {
+          "inclusions": {
+            "example": ["Guided hikes", "Camping gear"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclusions": {
+            "example": ["Flights", "Travel insurance"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["inclusions", "exclusions"]
+      }
+    }
+  }
+}

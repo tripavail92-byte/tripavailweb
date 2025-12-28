@@ -1,0 +1,26 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { HealthController } from '../src/health/health.controller';
+
+describe('HealthController', () => {
+  let controller: HealthController;
+
+  beforeAll(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+    }).compile();
+
+    controller = module.get<HealthController>(HealthController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('getHealth should return ok status', () => {
+    const res = controller.getHealth();
+    expect(res.status).toBe('ok');
+    expect(typeof res.timestamp).toBe('string');
+    expect(res.service).toBeDefined();
+    expect(res.version).toBeDefined();
+  });
+});

@@ -1,0 +1,150 @@
+services:
+  # PostgreSQL - Main Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: tripavail_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tripavail
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Test Database
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: tripavail_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tripavail_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: tripavail_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Meilisearch - Search Engine
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: tripavail_meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: meilisearch_master_key_change_in_production
+      MEILI_NO_ANALYTICS: true
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MailHog - Email Testing (Development Only)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: tripavail_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO - S3-Compatible Storage (Development Only)
+  minio:
+    image: minio/minio:latest
+    container_name: tripavail_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Adminer - Database GUI (Optional, lightweight alternative to pgAdmin)
+  adminer:
+    image: adminer:latest
+    container_name: tripavail_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    depends_on:
+      - postgres
+
+  # Redis Commander - Redis GUI (Optional)
+  redis_commander:
+    image: rediscommander/redis-commander:latest
+    container_name: tripavail_redis_commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:redis_password
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+  redis_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  default:
+    name: tripavail_network
+    driver: bridge

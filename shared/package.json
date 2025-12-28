@@ -1,0 +1,20 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for TripAvail",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "shared",
+    "types"
+  ],
+  "author": "TripAvail Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

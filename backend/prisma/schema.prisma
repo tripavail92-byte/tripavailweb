@@ -1,0 +1,461 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Account
+model User {
+  id            String     @id @default(cuid())
+  email         String?    @unique
+  phone         String?    @unique
+  password      String?
+  firstName     String?
+  lastName      String?
+  avatar        String?
+  role          UserRole   @default(TRAVELER)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  
+  profiles      ProviderProfile[]
+  bookings      Booking[]
+  reviews       Review[]
+  auditLogs     AuditLog[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+}
+
+enum UserRole {
+  TRAVELER
+  ADMIN
+}
+
+// Provider Profile
+model ProviderProfile {
+  id                  String                @id @default(cuid())
+  userId              String
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  providerType        ProviderType
+  businessName        String?
+  businessDescription String?
+  
+  verificationStatus  VerificationStatus    @default(NOT_STARTED)
+  verifiedAt          DateTime?
+  
+  bankName            String?
+  bankAccount         String?
+
+  onboarding          ProviderOnboarding?
+  kycDocuments        KycDocument[]
+  
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  
+  @@unique([userId, providerType])
+  @@index([verificationStatus])
+}
+
+enum ProviderType {
+  HOTEL_MANAGER
+  TOUR_OPERATOR
+}
+
+enum VerificationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+// Listing (Stays)
+model Listing {
+  id            String        @id @default(cuid())
+  providerId    String
+  name          String
+  address       String
+  city          String
+  latitude      Float
+  longitude     Float
+  description   String        @db.Text
+  status        ListingStatus @default(DRAFT)
+  checkInTime   String
+  checkOutTime  String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  rooms         Room[]
+  amenities     ListingAmenity[]
+
+  @@index([providerId])
+  @@index([status])
+  @@index([city])
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+// Room Types
+model Room {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  name        String
+  capacity    Int
+  bedConfig   String
+  basePrice   Decimal  @db.Decimal(10, 2)
+  totalUnits  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory   InventoryNight[]
+
+  @@index([listingId])
+}
+
+// Inventory per Night
+model InventoryNight {
+  id              String   @id @default(cuid())
+  roomId          String
+  room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  date            DateTime @db.Date
+  totalUnits      Int
+  availableUnits  Int
+  basePrice       Decimal  @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([roomId, date])
+  @@index([date])
+}
+
+// Amenity master list
+model Amenity {
+  id        String   @id @default(cuid())
+  name      String
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name])
+  @@index([category])
+
+  listings      ListingAmenity[]
+  hotelPackages HotelPackageAmenity[]
+}
+
+// Listing ↔ Amenity join
+model ListingAmenity {
+  id         String   @id @default(cuid())
+  listingId  String
+  amenityId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, amenityId])
+  @@index([amenityId])
+}
+
+// HotelPackage ↔ Amenity join
+model HotelPackageAmenity {
+  id           String        @id @default(cuid())
+  packageId    String
+  amenityId    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  package HotelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  amenity Amenity       @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, amenityId])
+  @@index([amenityId])
+}
+
+// Hotel Packages
+model HotelPackage {
+  id              String        @id @default(cuid())
+  providerId      String
+  listingId       String
+  templateId      String
+  name            String
+  description     String        @db.Text
+  status          PackageStatus @default(DRAFT)
+  pricePerPerson  Decimal       @db.Decimal(10, 2)
+  inclusions      String[]
+  exclusions      String[]
+  availabilityRule String       // WEEKEND_ONLY, SEASONAL, FLEXIBLE
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  amenities HotelPackageAmenity[]
+
+  @@index([providerId])
+  @@index([listingId])
+  @@index([status])
+}
+
+enum PackageStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+// Tour Packages
+model TourPackage {
+  id          String        @id @default(cuid())
+  providerId  String
+  tripType    String
+  name        String
+  description String        @db.Text
+  duration    Int           // days
+  status      PackageStatus @default(DRAFT)
+  basePrice   Decimal       @db.Decimal(10, 2)
+  maxSeats    Int
+  highlights  String[]      @default([])
+  inclusions  String[]      @default([])
+  exclusions  String[]      @default([])
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  itinerary   ItineraryDay[]
+  pickups     Pickup[]
+  departures  TourDeparture[]
+
+  @@index([providerId])
+  @@index([status])
+}
+
+// Itinerary Days
+model ItineraryDay {
+  id          String      @id @default(cuid())
+  packageId   String
+  package     TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  day         Int
+  title       String
+  description String      @db.Text
+  createdAt   DateTime    @default(now())
+
+  @@unique([packageId, day])
+  @@index([packageId])
+}
+
+// Pickup Locations
+model Pickup {
+  id          String      @id @default(cuid())
+  packageId   String
+  package     TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  city        String
+  location    String
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime    @default(now())
+
+  @@index([packageId])
+}
+
+// Tour Departures (Inventory)
+model TourDeparture {
+  id              String      @id @default(cuid())
+  packageId       String
+  package         TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  departureDate   DateTime
+  availableSeats  Int
+  status          String
+  createdAt       DateTime    @default(now())
+
+  @@unique([packageId, departureDate])
+  @@index([departureDate])
+}
+
+// Booking State Machine
+model Booking {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  providerId      String
+  productType     String        // STAY, HOTEL_PACKAGE, TOUR_PACKAGE
+  productId       String
+  status          BookingStatus @default(QUOTE)
+  checkIn         DateTime?
+  checkOut        DateTime?
+  guests          Int
+  priceSnapshot   Json
+  idempotencyKey  String?       @unique
+  totalPrice      Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  holdExpiresAt   DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  payment         Payment?
+  ledgerEntries   LedgerEntry[]
+
+  @@index([userId])
+  @@index([providerId])
+  @@index([status])
+  @@index([idempotencyKey])
+}
+
+enum BookingStatus {
+  QUOTE
+  HOLD
+  PAYMENT_PENDING
+  CONFIRMED
+  COMPLETED
+  EXPIRED_HOLD
+  CANCELLED_BY_GUEST
+  CANCELLED_BY_PROVIDER
+}
+
+// Payment
+model Payment {
+  id              String   @id @default(cuid())
+  bookingId       String   @unique
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount          Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  provider        String   @default("STRIPE")
+  providerTxnId   String?
+  status          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([provider])
+  @@index([status])
+}
+
+// Ledger (Double-Entry Accounting)
+model LedgerEntry {
+  id          String   @id @default(cuid())
+  bookingId   String?
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+  type        String   // DEBIT, CREDIT
+  account     String   // TRAVELER, PROVIDER_EARNINGS, COMMISSION
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([account])
+  @@index([createdAt])
+}
+
+// Review
+model Review {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  
+  rating    Int     @default(5)
+  comment   String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// OTP auth
+model AuthOtp {
+  id         String   @id @default(cuid())
+  target     String
+  channel    String   // phone | email
+  purpose    String   // login
+  code       String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([target, channel])
+}
+
+// Provider onboarding progress
+model ProviderOnboarding {
+  id             String   @id @default(cuid())
+  providerId     String
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  currentStep    Int      @default(1)
+  completedSteps Json?
+  onboardingData Json?    // Stores step data (step2_basics, step3_location, etc.)
+  submittedAt    DateTime?
+  approvedAt     DateTime?
+  rejectedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([providerId])
+}
+
+// KYC Documents
+model KycDocument {
+  id           String            @id @default(cuid())
+  providerId   String
+  provider     ProviderProfile   @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  documentType String            // business_license, owner_id, tax_certificate, tour_license, etc.
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  uploadUrl    String
+  status       DocumentStatus    @default(PENDING)
+  uploadedAt   DateTime?
+  reviewedAt   DateTime?
+  reviewedBy   String?           // Admin user ID
+  reviewNotes  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([providerId])
+  @@index([status])
+  @@index([documentType])
+}
+
+enum DocumentStatus {
+  PENDING
+  UPLOADED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// Audit Log (tracks all admin actions)
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String   // e.g., "KYC_DOCUMENT_APPROVE", "PROVIDER_APPROVED", "PROVIDER_SUSPENDED"
+  targetType String   // e.g., "KycDocument", "ProviderProfile", "Listing"
+  targetId   String   // ID of the target resource
+  metadata   Json     @default("{}")  // Additional context
+  createdAt  DateTime @default(now())
+  
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@index([action])
+  @@index([createdAt])
+}
