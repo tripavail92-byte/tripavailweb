@@ -8,10 +8,10 @@ import { setAccessToken, startOtp, verifyOtp } from '@/lib/api-client';
 export default function LoginPage() {
   const router = useRouter();
   const { refresh, user } = useAuthContext();
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4100';
   const [channel, setChannel] = useState<'phone' | 'email'>('email');
   const [contact, setContact] = useState('test@example.com');
   const [code, setCode] = useState('');
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const redirecting = useRef(false);
@@ -34,8 +34,7 @@ export default function LoginPage() {
       setLoading(true);
       setMessage(null);
       setCode('');
-      setGeneratedCode(null);
-      
+
       console.log('Calling startOtp...');
       const response = await startOtp({
         channel,
@@ -43,22 +42,20 @@ export default function LoginPage() {
         phone: channel === 'phone' ? contact : undefined,
         purpose: 'login',
       });
-      
+
       console.log('Response received:', response);
       console.log('Response type:', typeof response);
       console.log('Response is object?', typeof response === 'object');
-      
+
       if (!response) {
         setMessage('ERROR: No response received from backend');
         return;
       }
-      
-      // Try different ways to access the code
-      const codeValue = response.code || (response as any)?.code;
+
+      const codeValue = response.code;
       console.log('Code value:', codeValue);
-      
+
       if (codeValue) {
-        setGeneratedCode(codeValue);
         setCode(codeValue);
         setMessage(`✓ CODE: ${codeValue}`);
       } else {
@@ -114,15 +111,26 @@ export default function LoginPage() {
     <div className="mx-auto max-w-xl space-y-4 p-6">
       <h1 className="text-2xl font-semibold">Login (OTP)</h1>
       <p className="text-sm">Not logged in.</p>
+      <p className="text-xs text-neutral-500">API base: {apiBaseUrl}</p>
 
       <form onSubmit={handleStart} className="space-y-3 rounded-lg border bg-white p-4 shadow-sm">
         <div className="flex gap-2 text-sm">
           <label className="flex items-center gap-1">
-            <input type="radio" value="email" checked={channel === 'email'} onChange={() => setChannel('email')} />
+            <input
+              type="radio"
+              value="email"
+              checked={channel === 'email'}
+              onChange={() => setChannel('email')}
+            />
             Email
           </label>
           <label className="flex items-center gap-1">
-            <input type="radio" value="phone" checked={channel === 'phone'} onChange={() => setChannel('phone')} />
+            <input
+              type="radio"
+              value="phone"
+              checked={channel === 'phone'}
+              onChange={() => setChannel('phone')}
+            />
             Phone
           </label>
         </div>
@@ -144,16 +152,26 @@ export default function LoginPage() {
           className="w-full rounded border px-3 py-2"
           placeholder="OTP code"
         />
-        <button type="submit" className="rounded bg-emerald-600 px-4 py-2 text-white" disabled={loading}>
+        <button
+          type="submit"
+          className="rounded bg-emerald-600 px-4 py-2 text-white"
+          disabled={loading}
+        >
           {loading ? 'Verifying…' : 'Verify & Login'}
         </button>
       </form>
 
-      <button onClick={handleLogout} className="rounded bg-neutral-200 px-4 py-2 text-sm" disabled={loading}>
+      <button
+        onClick={handleLogout}
+        className="rounded bg-neutral-200 px-4 py-2 text-sm"
+        disabled={loading}
+      >
         Logout
       </button>
 
-      {message && <div className="rounded border bg-white p-3 text-sm text-neutral-800">{message}</div>}
+      {message && (
+        <div className="rounded border bg-white p-3 text-sm text-neutral-800">{message}</div>
+      )}
     </div>
   );
 }

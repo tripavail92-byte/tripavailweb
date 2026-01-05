@@ -1,4 +1,3 @@
-
 export type ProviderType = 'HOTEL_MANAGER' | 'TOUR_OPERATOR';
 export type VerificationStatus =
   | 'NOT_STARTED'
@@ -40,6 +39,18 @@ export interface ApiError extends Error {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4100';
 
+function buildApiUrl(path: string): string {
+  const base = API_BASE_URL.replace(/\/+$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  // Avoid double "/v1" when API_BASE_URL already includes it
+  if (base.endsWith('/v1') && normalizedPath.startsWith('/v1/')) {
+    return base + normalizedPath.substring('/v1'.length);
+  }
+
+  return base + normalizedPath;
+}
+
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
@@ -67,23 +78,38 @@ function buildHeaders(extra?: HeadersInit): HeadersInit {
   return { ...base, ...(extra || {}) };
 }
 
-export async function apiFetch<T>(path: string, opts?: { method?: string; body?: unknown; headers?: HeadersInit }): Promise<T> {
-  const url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
-  const res = await fetch(url, {
-    method: opts?.method || 'GET',
-    headers: buildHeaders(opts?.headers),
-    body: opts?.body ? JSON.stringify(opts.body) : undefined,
-    cache: 'no-store',
-  });
+export async function apiFetch<T>(
+  path: string,
+  opts?: { method?: string; body?: unknown; headers?: HeadersInit },
+): Promise<T> {
+  const url = buildApiUrl(path);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: opts?.method || 'GET',
+      headers: buildHeaders(opts?.headers),
+      body: opts?.body ? JSON.stringify(opts.body) : undefined,
+      cache: 'no-store',
+    });
+  } catch (err) {
+    const original = err instanceof Error ? err.message : String(err);
+    const error: ApiError = new Error(`Network error calling ${url}: ${original}`);
+    throw error;
+  }
 
   const contentType = res.headers.get('content-type');
   const isJson = contentType?.includes('application/json');
   const data: unknown = isJson ? await res.json() : await res.text();
 
   if (!res.ok) {
-    const message = typeof data === 'object' && data && 'message' in data && typeof (data as { message: unknown }).message === 'string'
-      ? (data as { message: string }).message
-      : 'Request failed';
+    const message =
+      typeof data === 'object' &&
+      data &&
+      'message' in data &&
+      typeof (data as { message: unknown }).message === 'string'
+        ? (data as { message: string }).message
+        : 'Request failed';
     const error: ApiError = new Error(message);
     error.status = res.status;
     error.details = data;
@@ -218,7 +244,10 @@ export interface UpdateHotelPackagePayload {
 }
 
 export async function createHotelPackage(providerId: string, payload: CreateHotelPackagePayload) {
-  return apiFetch<{ id: string }>(`/v1/hotel-packages/${providerId}/packages`, { method: 'POST', body: payload });
+  return apiFetch<{ id: string }>(`/v1/hotel-packages/${providerId}/packages`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export async function updateHotelPackage(
@@ -241,7 +270,9 @@ export async function mutateHotelPackageStatus(
   packageId: string,
   action: 'publish' | 'pause' | 'archive',
 ) {
-  return apiFetch(`/v1/hotel-packages/${providerId}/packages/${packageId}/${action}`, { method: 'POST' });
+  return apiFetch(`/v1/hotel-packages/${providerId}/packages/${packageId}/${action}`, {
+    method: 'POST',
+  });
 }
 
 export async function createTourStep1(providerId: string, tripType: string) {
@@ -259,14 +290,22 @@ export interface TourBasicsPayload {
   maxSeats: number;
 }
 
-export async function updateTourBasics(providerId: string, packageId: string, payload: TourBasicsPayload) {
+export async function updateTourBasics(
+  providerId: string,
+  packageId: string,
+  payload: TourBasicsPayload,
+) {
   return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/step2-basics`, {
     method: 'PATCH',
     body: payload,
   });
 }
 
-export async function updateTourDepartures(providerId: string, packageId: string, departures: string[]) {
+export async function updateTourDepartures(
+  providerId: string,
+  packageId: string,
+  departures: string[],
+) {
   return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/step3-departures`, {
     method: 'PUT',
     body: { departures },
@@ -280,7 +319,11 @@ export async function updateTourPickups(providerId: string, packageId: string, p
   });
 }
 
-export async function updateTourHighlights(providerId: string, packageId: string, highlights: string[]) {
+export async function updateTourHighlights(
+  providerId: string,
+  packageId: string,
+  highlights: string[],
+) {
   return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/step5-highlights`, {
     method: 'PATCH',
     body: { highlights },
@@ -298,14 +341,26 @@ export async function updateTourItinerary(
   });
 }
 
-export async function updateTourInclusions(providerId: string, packageId: string, inclusions: string[], exclusions: string[]) {
-  return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/step7-inclusions-exclusions`, {
-    method: 'PATCH',
-    body: { inclusions, exclusions },
-  });
+export async function updateTourInclusions(
+  providerId: string,
+  packageId: string,
+  inclusions: string[],
+  exclusions: string[],
+) {
+  return apiFetch(
+    `/v1/tour-packages/${providerId}/packages/${packageId}/step7-inclusions-exclusions`,
+    {
+      method: 'PATCH',
+      body: { inclusions, exclusions },
+    },
+  );
 }
 
-export async function updateTourAmenities(providerId: string, packageId: string, amenityIds: string[]) {
+export async function updateTourAmenities(
+  providerId: string,
+  packageId: string,
+  amenityIds: string[],
+) {
   return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/step8-amenities`, {
     method: 'PATCH',
     body: { amenityIds },
@@ -320,7 +375,10 @@ export interface UpdateOperatorProfilePayload {
   contactPhone?: string;
 }
 
-export async function updateOperatorProfile(providerId: string, payload: UpdateOperatorProfilePayload) {
+export async function updateOperatorProfile(
+  providerId: string,
+  payload: UpdateOperatorProfilePayload,
+) {
   return apiFetch(`/v1/operator-profile/${providerId}`, {
     method: 'PATCH',
     body: payload,
@@ -336,7 +394,9 @@ export async function mutateTourStatus(
   packageId: string,
   action: 'publish' | 'pause' | 'archive',
 ) {
-  return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/${action}`, { method: 'POST' });
+  return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/${action}`, {
+    method: 'POST',
+  });
 }
 
 export interface StartOnboardingPayload {
@@ -344,7 +404,10 @@ export interface StartOnboardingPayload {
 }
 
 export async function startProviderOnboarding(payload: StartOnboardingPayload) {
-  return apiFetch<{ onboardingId: string; providerId: string }>(`/v1/provider-onboarding/start`, { method: 'POST', body: payload });
+  return apiFetch<{ onboardingId: string; providerId: string }>(`/v1/provider-onboarding/start`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export interface OnboardingStatus {
@@ -413,27 +476,45 @@ export interface HotelStep7ReviewPayload {
 }
 
 export async function hotelStep2Basics(providerId: string, payload: HotelStep2BasicsPayload) {
-  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-2-basics`, { method: 'POST', body: payload });
+  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-2-basics`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export async function hotelStep3Location(providerId: string, payload: HotelStep3LocationPayload) {
-  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-3-location`, { method: 'POST', body: payload });
+  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-3-location`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export async function hotelStep4Rooms(providerId: string, payload: HotelStep4RoomsPayload) {
-  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-4-rooms`, { method: 'POST', body: payload });
+  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-4-rooms`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export async function hotelStep5Amenities(providerId: string, payload: HotelStep5AmenitiesPayload) {
-  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-5-amenities`, { method: 'POST', body: payload });
+  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-5-amenities`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export async function hotelStep6Policies(providerId: string, payload: HotelStep6PoliciesPayload) {
-  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-6-policies`, { method: 'POST', body: payload });
+  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-6-policies`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export async function hotelStep7Review(providerId: string, payload: HotelStep7ReviewPayload) {
-  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-7-review`, { method: 'POST', body: payload });
+  return apiFetch(`/v1/provider-onboarding/${providerId}/hotel/step-7-review`, {
+    method: 'POST',
+    body: payload,
+  });
 }
 
 export interface PropertySnapshot {
