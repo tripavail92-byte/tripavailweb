@@ -12,7 +12,12 @@ async function bootstrap() {
   app.use(helmet());
 
   // CORS configuration
-  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3100'];
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+    'http://localhost:3000',
+    'http://localhost:3100',
+    'https://tripavailweb-web-2ojm.vercel.app',
+    'https://*.vercel.app',
+  ];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
