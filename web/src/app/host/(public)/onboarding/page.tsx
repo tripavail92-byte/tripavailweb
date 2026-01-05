@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   HotelStep2BasicsPayload,
   HotelStep3LocationPayload,
@@ -30,26 +31,57 @@ const STEPS = [
   { num: 7, name: 'Review', description: 'Final submission' },
 ];
 
+// Force dynamic rendering - page requires authentication
+export const dynamic = 'force-dynamic';
+
 export default function HostOnboardingPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [result, setResult] = useState<{ onboardingId?: string; providerId?: string } | null>(null);
   const [providerId, setProviderId] = useState('');
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
-  const [currentViewStep, setCurrentViewStep] = useState(2);
+  const [currentViewStep, setCurrentViewStep] = useState(1); // Start at Step 1 (Welcome)
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const hotelProfile = user?.profiles?.find((p) => p.providerType === 'HOTEL_MANAGER');
+  
+  console.log('[HostOnboarding] user:', user);
+  console.log('[HostOnboarding] hotelProfile:', hotelProfile);
+  console.log('[HostOnboarding] currentViewStep:', currentViewStep);
+
+  // Auth protection: redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('[HostOnboarding] No user found, redirecting to login');
+      router.push('/auth/login?redirect=/host/onboarding');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     if (hotelProfile) {
+      console.log('[HostOnboarding] Found hotel profile, loading status');
       setProviderId(hotelProfile.id);
       loadOnboardingStatus(hotelProfile.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelProfile?.id]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // Will redirect if no user
+  if (!user) {
+    return null;
+  }
 
   const loadOnboardingStatus = async (pid: string) => {
     try {
@@ -139,12 +171,17 @@ export default function HostOnboardingPage() {
       setLoading(true);
       setError(null);
       setSuccess(null);
-      const res = await startProviderOnboarding({ providerType: 'HOTEL_MANAGER' });
+
+      // Backend may return either { providerId } or { profile: { id } }
+      const res: any = await startProviderOnboarding({ providerType: 'HOTEL_MANAGER' });
       setResult(res);
-      if (res.providerId) {
-        setProviderId(res.providerId);
-        await loadOnboardingStatus(res.providerId);
+
+      const providerIdFromResponse = res?.providerId || res?.profile?.id;
+      if (providerIdFromResponse) {
+        setProviderId(providerIdFromResponse);
+        await loadOnboardingStatus(providerIdFromResponse);
       }
+
       setSuccess('Onboarding started successfully!');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to start onboarding';

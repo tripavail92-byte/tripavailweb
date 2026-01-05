@@ -12,25 +12,26 @@ datasource db {
 
 // User Account
 model User {
-  id            String     @id @default(cuid())
-  email         String?    @unique
-  phone         String?    @unique
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  phone         String?  @unique
   password      String?
   firstName     String?
   lastName      String?
   avatar        String?
-  role          UserRole   @default(TRAVELER)
-  emailVerified Boolean    @default(false)
-  phoneVerified Boolean    @default(false)
-  
-  profiles      ProviderProfile[]
-  bookings      Booking[]
-  reviews       Review[]
-  auditLogs     AuditLog[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  role          UserRole @default(TRAVELER)
+  emailVerified Boolean  @default(false)
+  phoneVerified Boolean  @default(false)
+
+  profiles        ProviderProfile[]
+  bookings        Booking[]
+  reviews         Review[]
+  auditLogs       AuditLog[]
+  refundRequests  Refund[]          @relation("RefundRequests")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([email])
   @@index([phone])
   @@index([role])
@@ -43,26 +44,29 @@ enum UserRole {
 
 // Provider Profile
 model ProviderProfile {
-  id                  String                @id @default(cuid())
-  userId              String
-  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   providerType        ProviderType
   businessName        String?
   businessDescription String?
-  
-  verificationStatus  VerificationStatus    @default(NOT_STARTED)
-  verifiedAt          DateTime?
-  
-  bankName            String?
-  bankAccount         String?
 
-  onboarding          ProviderOnboarding?
-  kycDocuments        KycDocument[]
-  
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  
+  verificationStatus VerificationStatus @default(NOT_STARTED)
+  verifiedAt         DateTime?
+
+  bankName    String?
+  bankAccount String?
+
+  onboarding      ProviderOnboarding?
+  kycDocuments    KycDocument[]
+  operatorProfile OperatorProfile?
+  refunds         Refund[]            @relation("ProviderRefunds")
+  payouts         PayoutStatement[]   @relation("ProviderPayouts")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([userId, providerType])
   @@index([verificationStatus])
 }
@@ -82,24 +86,43 @@ enum VerificationStatus {
   SUSPENDED
 }
 
+// Tour Operator Profile (base location, meeting point)
+model OperatorProfile {
+  id         String @id @default(cuid())
+  providerId String @unique
+  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  // Base location / meeting point
+  baseCity       String?
+  baseLatitude   Float?
+  baseLongitude  Float?
+  meetingPoint   String?
+  contactPhone   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([providerId])
+}
+
 // Listing (Stays)
 model Listing {
-  id            String        @id @default(cuid())
-  providerId    String
-  name          String
-  address       String
-  city          String
-  latitude      Float
-  longitude     Float
-  description   String        @db.Text
-  status        ListingStatus @default(DRAFT)
-  checkInTime   String
-  checkOutTime  String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  providerId   String
+  name         String
+  address      String
+  city         String
+  latitude     Float
+  longitude    Float
+  description  String        @db.Text
+  status       ListingStatus @default(DRAFT)
+  checkInTime  String
+  checkOutTime String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  rooms         Room[]
-  amenities     ListingAmenity[]
+  rooms     Room[]
+  amenities ListingAmenity[]
 
   @@index([providerId])
   @@index([status])
@@ -115,36 +138,39 @@ enum ListingStatus {
 
 // Room Types
 model Room {
-  id          String   @id @default(cuid())
-  listingId   String
-  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  name        String
-  capacity    Int
-  bedConfig   String
-  basePrice   Decimal  @db.Decimal(10, 2)
-  totalUnits  Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  name       String
+  capacity   Int
+  bedConfig  String
+  basePrice  Decimal  @db.Decimal(10, 2)
+  totalUnits Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  inventory   InventoryNight[]
+  inventory InventoryNight[]
 
   @@index([listingId])
 }
 
 // Inventory per Night
 model InventoryNight {
-  id              String   @id @default(cuid())
-  roomId          String
-  room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  date            DateTime @db.Date
-  totalUnits      Int
-  availableUnits  Int
-  basePrice       Decimal  @db.Decimal(10, 2)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  roomId         String
+  room           Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  date           DateTime @db.Date
+  totalUnits     Int
+  availableUnits Int
+  lockedUntil    DateTime? @default(now())
+  basePrice      Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([roomId, date])
   @@index([date])
+  @@index([lockedUntil])
+  @@index([roomId, date, availableUnits]) // Compound for availability checks
 }
 
 // Amenity master list
@@ -155,20 +181,21 @@ model Amenity {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([name])
-  @@index([category])
-
   listings      ListingAmenity[]
   hotelPackages HotelPackageAmenity[]
+  tourPackages  TourPackageAmenity[]
+
+  @@unique([name])
+  @@index([category])
 }
 
 // Listing ↔ Amenity join
 model ListingAmenity {
-  id         String   @id @default(cuid())
-  listingId  String
-  amenityId  String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  listingId String
+  amenityId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   amenity Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
@@ -179,14 +206,29 @@ model ListingAmenity {
 
 // HotelPackage ↔ Amenity join
 model HotelPackageAmenity {
-  id           String        @id @default(cuid())
-  packageId    String
-  amenityId    String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id        String   @id @default(cuid())
+  packageId String
+  amenityId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   package HotelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  amenity Amenity       @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  amenity Amenity      @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, amenityId])
+  @@index([amenityId])
+}
+
+// TourPackage ↔ Amenity join
+model TourPackageAmenity {
+  id        String      @id @default(cuid())
+  packageId String
+  amenityId String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  package TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  amenity Amenity     @relation(fields: [amenityId], references: [id], onDelete: Cascade)
 
   @@unique([packageId, amenityId])
   @@index([amenityId])
@@ -194,26 +236,39 @@ model HotelPackageAmenity {
 
 // Hotel Packages
 model HotelPackage {
-  id              String        @id @default(cuid())
-  providerId      String
-  listingId       String
-  templateId      String
-  name            String
-  description     String        @db.Text
-  status          PackageStatus @default(DRAFT)
-  pricePerPerson  Decimal       @db.Decimal(10, 2)
-  inclusions      String[]
-  exclusions      String[]
-  availabilityRule String       // WEEKEND_ONLY, SEASONAL, FLEXIBLE
-  publishedAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  providerId       String
+  listingId        String
+  templateId       String
+  name             String
+  description      String        @db.Text
+  status           PackageStatus @default(DRAFT)
+  pricePerPerson   Decimal       @db.Decimal(10, 2)
+  inclusions       String[]
+  exclusions       String[]
+  availabilityRule String // WEEKEND_ONLY, SEASONAL, FLEXIBLE
+  publishedAt      DateTime?
+
+  // Discount Fields
+  discountEnabled    Boolean   @default(false)
+  discountPercentage Decimal?  @db.Decimal(5, 2)
+  discountStartDate  DateTime?
+  discountEndDate    DateTime?
+
+  // Cancellation policy
+  cancellationPolicyId String?
+  cancellationPolicy   CancellationPolicy? @relation(fields: [cancellationPolicyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   amenities HotelPackageAmenity[]
+  bookings  Booking[]
 
   @@index([providerId])
   @@index([listingId])
   @@index([status])
+  @@index([providerId, status, publishedAt]) // Compound for package listing
 }
 
 enum PackageStatus {
@@ -230,7 +285,7 @@ model TourPackage {
   tripType    String
   name        String
   description String        @db.Text
-  duration    Int           // days
+  duration    Int // days
   status      PackageStatus @default(DRAFT)
   basePrice   Decimal       @db.Decimal(10, 2)
   maxSeats    Int
@@ -238,15 +293,58 @@ model TourPackage {
   inclusions  String[]      @default([])
   exclusions  String[]      @default([])
   publishedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
 
-  itinerary   ItineraryDay[]
-  pickups     Pickup[]
-  departures  TourDeparture[]
+  // Step 9: Media
+  images String[] @default([])
+
+  // Step 11: Notes & Safety
+  specialNotes       String?
+  safetyInformation  String[] @default([])
+  healthRequirements String?
+  insuranceInfo      String?
+
+  // Step 12: Compliance
+  complianceTermsAccepted     Boolean @default(false)
+  complianceLiabilityAccepted Boolean @default(false)
+
+  // Discount Fields
+  discountEnabled    Boolean   @default(false)
+  discountPercentage Decimal?  @db.Decimal(5, 2)
+  discountStartDate  DateTime?
+  discountEndDate    DateTime?
+
+  // Cancellation policy
+  cancellationPolicyId String?
+  cancellationPolicy   CancellationPolicy? @relation(fields: [cancellationPolicyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  itinerary  ItineraryDay[]
+  pickups    Pickup[]
+  departures TourDeparture[]
+  amenities  TourPackageAmenity[]
+  addOns     AddOn[]
+  bookings   Booking[]
 
   @@index([providerId])
   @@index([status])
+  @@index([providerId, status, publishedAt]) // Compound for tour package listing
+}
+
+// Tour Package Add-ons
+model AddOn {
+  id          String      @id @default(cuid())
+  packageId   String
+  package     TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  price       Decimal     @db.Decimal(10, 2)
+  isOptional  Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([packageId])
 }
 
 // Itinerary Days
@@ -265,59 +363,120 @@ model ItineraryDay {
 
 // Pickup Locations
 model Pickup {
-  id          String      @id @default(cuid())
-  packageId   String
-  package     TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  city        String
-  location    String
-  latitude    Float
-  longitude   Float
-  createdAt   DateTime    @default(now())
+  id        String      @id @default(cuid())
+  packageId String
+  package   TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  city      String
+  location  String
+  latitude  Float
+  longitude Float
+  createdAt DateTime    @default(now())
 
   @@index([packageId])
 }
 
 // Tour Departures (Inventory)
 model TourDeparture {
-  id              String      @id @default(cuid())
-  packageId       String
-  package         TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  departureDate   DateTime
-  availableSeats  Int
-  status          String
-  createdAt       DateTime    @default(now())
+  id             String      @id @default(cuid())
+  packageId      String
+  package        TourPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  departureDate  DateTime
+  availableSeats Int
+  lockedUntil    DateTime?   @default(now())
+  status         String
+  createdAt      DateTime    @default(now())
 
   @@unique([packageId, departureDate])
   @@index([departureDate])
+  @@index([lockedUntil])
+  @@index([packageId, departureDate, availableSeats]) // Compound for seat availability
+}
+
+// Cancellation Policy
+enum CancellationPolicyType {
+  FLEXIBLE
+  MODERATE
+  STRICT
+  NON_REFUNDABLE
+}
+
+model CancellationPolicy {
+  id                     String                  @id @default(cuid())
+  type                   CancellationPolicyType  @unique
+  name                   String
+  description            String?
+  fullRefundUntilDays    Int
+  partialRefundUntilDays Int?
+  noRefundUntilDays      Int?
+  createdAt              DateTime                @default(now())
+
+  hotelPackages HotelPackage[]
+  tourPackages  TourPackage[]
 }
 
 // Booking State Machine
 model Booking {
-  id              String        @id @default(cuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id])
-  providerId      String
-  productType     String        // STAY, HOTEL_PACKAGE, TOUR_PACKAGE
-  productId       String
-  status          BookingStatus @default(QUOTE)
-  checkIn         DateTime?
-  checkOut        DateTime?
-  guests          Int
-  priceSnapshot   Json
-  idempotencyKey  String?       @unique
-  totalPrice      Decimal       @db.Decimal(10, 2)
-  currency        String        @default("USD")
-  holdExpiresAt   DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  payment         Payment?
-  ledgerEntries   LedgerEntry[]
+  // Package references (polymorphic)
+  hotelPackageId String?
+  hotelPackage   HotelPackage? @relation(fields: [hotelPackageId], references: [id])
+  tourPackageId  String?
+  tourPackage    TourPackage?  @relation(fields: [tourPackageId], references: [id])
+
+  status BookingStatus @default(QUOTE)
+
+  // Booking details
+  checkInDate    DateTime?
+  checkOutDate   DateTime?
+  departureDate  DateTime?
+  numberOfGuests Int
+  numberOfRooms  Int?
+
+  selectedRoomIds String[] @default([])
+  selectedAddOns  String[] @default([])
+
+  // Pricing (SNAPSHOT - never recompute)
+  priceSnapshot Json // { basePrice, tax, commission, total, breakdown }
+  totalPrice    Decimal @db.Decimal(12, 2)
+  currency      String  @default("USD")
+
+  // Hold management
+  holdExpiresAt  DateTime?
+  idempotencyKey String?   @unique
+
+  // Payment info
+  paymentIntentId  String?
+  paymentMethodId  String?
+  lastPaymentError String?
+
+  // Cancellation policy snapshot
+  cancellationPolicy     CancellationPolicyType?
+  cancellationPolicyJson Json?
+
+  // Timestamps
+  quotedAt    DateTime  @default(now())
+  heldAt      DateTime?
+  confirmedAt DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  payment       Payment?
+  refund        Refund?
+  ledgerEntries LedgerEntry[]
 
   @@index([userId])
-  @@index([providerId])
   @@index([status])
   @@index([idempotencyKey])
+  @@index([hotelPackageId])
+  @@index([tourPackageId])
+  @@index([holdExpiresAt])
+  @@index([userId, status, createdAt]) // Compound for user booking list
 }
 
 enum BookingStatus {
@@ -336,99 +495,247 @@ model Payment {
   id              String   @id @default(cuid())
   bookingId       String   @unique
   booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  amount          Decimal  @db.Decimal(10, 2)
+  status          String   @default("PRE_AUTHORIZED") // PRE_AUTHORIZED, CONFIRMED, CAPTURED, FAILED, REFUNDED
+  amount          Decimal  @db.Decimal(12, 2)
   currency        String   @default("USD")
-  provider        String   @default("STRIPE")
-  providerTxnId   String?
-  status          String
+  paymentMethodId String?
+  paymentIntentId String?  @unique
+  metadata        Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([provider])
+  @@index([bookingId])
+  @@index([paymentIntentId])
   @@index([status])
 }
 
 // Ledger (Double-Entry Accounting)
 model LedgerEntry {
-  id          String   @id @default(cuid())
-  bookingId   String?
-  booking     Booking? @relation(fields: [bookingId], references: [id])
-  type        String   // DEBIT, CREDIT
-  account     String   // TRAVELER, PROVIDER_EARNINGS, COMMISSION
-  amount      Decimal  @db.Decimal(10, 2)
-  currency    String
-  description String
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  bookingId     String?
+  booking       Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  type          String // BOOKING_CONFIRMED, REFUND_PROCESSED, PROVIDER_PAYOUT
+  debitAccount  String // "traveler:123", "provider:456", "platform"
+  creditAccount String
+  amount        Decimal  @db.Decimal(12, 2)
+  currency      String   @default("USD")
+  description   String
+  metadata      Json?
+  createdAt     DateTime @default(now())
 
   @@index([bookingId])
-  @@index([account])
+  @@index([debitAccount])
+  @@index([creditAccount])
+  @@index([createdAt])
+  @@index([debitAccount, createdAt]) // Compound for ledger reports
+  @@index([creditAccount, createdAt]) // Compound for payout calculations
+}
+
+// Refund Processing
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+  FAILED
+  CANCELLED
+}
+
+model Refund {
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation("RefundRequests", fields: [userId], references: [id])
+  providerId      String
+  provider        ProviderProfile @relation("ProviderRefunds", fields: [providerId], references: [id])
+  
+  status          RefundStatus  @default(PENDING)
+  reason          String        @db.Text
+  
+  // Refund calculation
+  refundAmount    Decimal       @db.Decimal(12, 2)
+  refundReason    String        // CUSTOMER_REQUEST, CANCELLATION, DISPUTE, etc.
+  cancellationPolicyApplied CancellationPolicyType?
+  refundPercentage Decimal?     @db.Decimal(5, 2) // % of original booking
+  
+  // Payment reversal
+  originalPaymentId String?
+  refundPaymentId  String?
+  paymentMethodUsed String?      // card_ending_in_1234, bank_account, etc.
+  
+  // Metadata
+  refundJson      Json?         // snapshot of calculation details
+  adminNotes      String?
+  approvedBy      String?       // Admin user ID
+  approvedAt      DateTime?
+  processedAt     DateTime?
+  failureReason   String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([bookingId])
+  @@index([userId])
+  @@index([providerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Payout Batches (Weekly/Monthly aggregation)
+enum PayoutStatus {
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutScheduleFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+model PayoutBatch {
+  id              String              @id @default(cuid())
+  batchNumber     String              @unique // PAYOUT-2026-01-001
+  frequency       PayoutScheduleFrequency @default(WEEKLY)
+  status          PayoutStatus        @default(PENDING)
+  
+  // Period
+  startDate       DateTime
+  endDate         DateTime
+  
+  // Totals
+  totalAmount     Decimal             @db.Decimal(14, 2)
+  totalCount      Int                 @default(0) // number of payouts
+  currency        String              @default("USD")
+  
+  // Bank transfer details
+  transferId      String?             // Stripe transfer ID, etc.
+  transferStatus  String?             // succeeded, pending, failed
+  transferFailureReason String?
+  
+  // Metadata
+  metadata        Json?
+  notes           String?
+  scheduledAt     DateTime?
+  processedAt     DateTime?
+  
+  statements      PayoutStatement[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([status])
+  @@index([startDate])
+  @@index([frequency])
+  @@index([createdAt])
+}
+
+// Individual payout statement per provider
+model PayoutStatement {
+  id              String            @id @default(cuid())
+  batchId         String
+  batch           PayoutBatch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  providerId      String
+  provider        ProviderProfile   @relation("ProviderPayouts", fields: [providerId], references: [id])
+  
+  // Earnings calculation
+  earnings        Decimal           @db.Decimal(12, 2)
+  platformFees    Decimal           @db.Decimal(12, 2) // Commission deducted
+  refundsDeducted Decimal           @db.Decimal(12, 2) // Refund amount deducted from payout
+  netAmount       Decimal           @db.Decimal(12, 2) // earnings - fees - refunds
+  
+  // Tax information
+  taxAmount       Decimal?          @db.Decimal(12, 2)
+  taxWithheld     Boolean           @default(false)
+  
+  // Payment details
+  bankAccountId   String?
+  transferId      String?           // Stripe payout ID
+  status          PayoutStatus      @default(PENDING)
+  failureReason   String?
+  
+  // Metadata
+  statementJson   Json?             // Full statement breakdown
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@unique([batchId, providerId])
+  @@index([batchId])
+  @@index([providerId])
+  @@index([status])
   @@index([createdAt])
 }
 
 // Review
 model Review {
-  id        String  @id @default(cuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id])
-  
-  rating    Int     @default(5)
-  comment   String?
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  rating  Int     @default(5)
+  comment String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([userId])
 }
 
 // OTP auth
 model AuthOtp {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   target     String
-  channel    String   // phone | email
-  purpose    String   // login
+  channel    String // phone | email
+  purpose    String // login
   code       String
   expiresAt  DateTime
-  attempts   Int      @default(0)
+  attempts   Int       @default(0)
   consumedAt DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([target, channel])
 }
 
 // Provider onboarding progress
 model ProviderOnboarding {
-  id             String   @id @default(cuid())
+  id             String          @id @default(cuid())
   providerId     String
   provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  currentStep    Int      @default(1)
+  currentStep    Int             @default(1)
   completedSteps Json?
-  onboardingData Json?    // Stores step data (step2_basics, step3_location, etc.)
+  onboardingData Json? // Stores step data (step2_basics, step3_location, etc.)
   submittedAt    DateTime?
   approvedAt     DateTime?
   rejectedAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@unique([providerId])
 }
 
 // KYC Documents
 model KycDocument {
-  id           String            @id @default(cuid())
+  id           String          @id @default(cuid())
   providerId   String
-  provider     ProviderProfile   @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  documentType String            // business_license, owner_id, tax_certificate, tour_license, etc.
+  provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  documentType String // business_license, owner_id, tax_certificate, tour_license, etc.
   fileName     String
   fileSize     Int
   mimeType     String
   uploadUrl    String
-  status       DocumentStatus    @default(PENDING)
+  status       DocumentStatus  @default(PENDING)
   uploadedAt   DateTime?
   reviewedAt   DateTime?
-  reviewedBy   String?           // Admin user ID
+  reviewedBy   String? // Admin user ID
   reviewNotes  String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   @@index([providerId])
   @@index([status])
@@ -448,12 +755,12 @@ model AuditLog {
   id         String   @id @default(cuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id])
-  action     String   // e.g., "KYC_DOCUMENT_APPROVE", "PROVIDER_APPROVED", "PROVIDER_SUSPENDED"
-  targetType String   // e.g., "KycDocument", "ProviderProfile", "Listing"
-  targetId   String   // ID of the target resource
-  metadata   Json     @default("{}")  // Additional context
+  action     String // e.g., "KYC_DOCUMENT_APPROVE", "PROVIDER_APPROVED", "PROVIDER_SUSPENDED"
+  targetType String // e.g., "KycDocument", "ProviderProfile", "Listing"
+  targetId   String // ID of the target resource
+  metadata   Json     @default("{}") // Additional context
   createdAt  DateTime @default(now())
-  
+
   @@index([userId])
   @@index([targetType, targetId])
   @@index([action])

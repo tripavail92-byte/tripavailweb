@@ -17,7 +17,10 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "openapi:export": "ts-node src/scripts/generate-openapi.ts",
-    "seed": "ts-node --transpile-only prisma/seed.ts"
+    "seed": "ts-node --transpile-only prisma/seed.ts",
+    "migration:run": "prisma migrate deploy",
+    "migration:dev": "prisma migrate dev",
+    "prisma:generate": "prisma generate"
   },
   "keywords": [
     "nestjs",
@@ -35,24 +38,26 @@
     "@nestjs/cli": "^11.0.14",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.10",
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "5.22.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.3",
     "@types/pg": "^8.16.0",
+    "@types/supertest": "^2.0.12",
     "jest": "^30.2.0",
-    "prisma": "^5.22.0",
+    "prisma": "5.22.0",
+    "supertest": "^6.3.3",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.9.3",
-    "@types/supertest": "^2.0.12",
-    "supertest": "^6.3.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.10",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.10",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.1.10",
+    "@nestjs/schedule": "^6.1.0",
     "@nestjs/swagger": "^11.2.3",
     "@nestjs/throttler": "^6.5.0",
     "class-transformer": "^0.5.1",
@@ -62,6 +67,7 @@
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "stripe": "^20.1.0",
     "zod": "^4.2.1"
   }
 }

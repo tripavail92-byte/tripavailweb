@@ -54,3 +54,5 @@ web/src/lib/api-types.ts
 # Temp files
 *.tmp
 .cache
+.vercel
+.env*.local

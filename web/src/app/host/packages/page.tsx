@@ -16,6 +16,7 @@ import {
   HotelPackageTemplate,
   PropertySnapshot,
 } from '@/lib/api-client';
+import DiscountSettingsStep from './discount';
 
 type ViewMode = 'list' | 'create' | 'edit';
 
@@ -399,6 +400,8 @@ export default function HostPackagesPage() {
             </button>
           </div>
         </form>
+
+        <DiscountSettingsStep />
       </div>
     );
   }

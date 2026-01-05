@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -25,17 +26,30 @@ import { Step4PickupsDto } from './dto/step4-pickups.dto';
 import { Step5HighlightsDto } from './dto/step5-highlights.dto';
 import { Step6ItineraryDto } from './dto/step6-itinerary.dto';
 import { Step7InclusionsExclusionsDto } from './dto/step7-inclusions-exclusions.dto';
+import { Step8AmenitiesDto } from './dto/step8-amenities.dto';
+import { Step9MediaDto } from './dto/step9-media.dto';
+import { CreateAddOnDto, UpdateAddOnDto } from './dto/step10-addons.dto';
+import { Step11NotesSafetyDto } from './dto/step11-notes-safety.dto';
+import { Step12ComplianceDto } from './dto/step12-compliance.dto';
+import { DiscountSettingsDto } from '../dto/discount-settings.dto';
+import { TOUR_PACKAGE_TEMPLATES } from './tour-package-templates';
 
 @ApiTags('tour-packages')
 @Controller('tour-packages')
 export class TourPackagesController {
-  // inject to keep pattern consistent; use in future methods
   constructor(public readonly service: TourPackagesService) {}
 
   @Get('ping')
   @HttpCode(HttpStatus.OK)
   ping() {
     return { ok: true, module: 'tour-packages' };
+  }
+
+  @Get('templates')
+  @ApiOperation({ summary: 'List tour package templates' })
+  @ApiResponse({ status: 200, description: 'List of supported tour package templates' })
+  templates() {
+    return { items: TOUR_PACKAGE_TEMPLATES };
   }
 
   @Get()
@@ -187,5 +201,137 @@ export class TourPackagesController {
     @Body() dto: Step7InclusionsExclusionsDto,
   ) {
     return this.service.step7InclusionsExclusions(providerId, id, dto);
+  }
+
+  @Patch(':providerId/packages/:id/step8-amenities')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Step 8: Select amenities from global list' })
+  async step8Amenities(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Body() dto: Step8AmenitiesDto,
+  ) {
+    return this.service.step8Amenities(providerId, id, dto);
+  }
+
+  @Patch(':providerId/packages/:id/step9-media')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Step 9: Set media (images)' })
+  async step9Media(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Body() dto: Step9MediaDto,
+  ) {
+    return this.service.step9Media(providerId, id, dto);
+  }
+
+  @Get(':providerId/packages/:id/addons')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'List add-ons for a tour package' })
+  async listAddOns(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+  ) {
+    return this.service.listAddOns(providerId, id);
+  }
+
+  @Post(':providerId/packages/:id/addons')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Create an add-on for a tour package' })
+  async createAddOn(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateAddOnDto,
+  ) {
+    return this.service.createAddOn(providerId, id, dto);
+  }
+
+  @Patch(':providerId/packages/:id/addons/:addOnId')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Update an add-on for a tour package' })
+  async updateAddOn(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Param('addOnId') addOnId: string,
+    @Body() dto: UpdateAddOnDto,
+  ) {
+    return this.service.updateAddOn(providerId, id, addOnId, dto);
+  }
+
+  @Delete(':providerId/packages/:id/addons/:addOnId')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Delete an add-on for a tour package' })
+  async deleteAddOn(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Param('addOnId') addOnId: string,
+  ) {
+    return this.service.deleteAddOn(providerId, id, addOnId);
+  }
+
+  @Patch(':providerId/packages/:id/step11-notes-safety')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Step 11: Set special notes and safety information' })
+  async step11NotesSafety(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Body() dto: Step11NotesSafetyDto,
+  ) {
+    return this.service.step11NotesSafety(providerId, id, dto);
+  }
+
+  @Patch(':providerId/packages/:id/step12-compliance')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Step 12: Set compliance acceptance' })
+  async step12Compliance(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Body() dto: Step12ComplianceDto,
+  ) {
+    return this.service.step12Compliance(providerId, id, dto);
+  }
+
+  @Get(':providerId/packages/:id/step13-preview')
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiOperation({ summary: 'Step 13: Preview all package data for final review' })
+  async step13Preview(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+  ) {
+    return this.service.step13Preview(providerId, id);
+  }
+
+  @Patch(':providerId/packages/:id/discount')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiParam({ name: 'id', description: 'TourPackage id' })
+  @ApiOperation({ summary: 'Update discount settings for a tour package' })
+  @ApiResponse({ status: 200, description: 'Tour package discount updated' })
+  async updateDiscount(
+    @Param('providerId') providerId: string,
+    @Param('id') id: string,
+    @Body() dto: DiscountSettingsDto,
+  ) {
+    return this.service.updateDiscount(providerId, id, dto);
   }
 }

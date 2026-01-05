@@ -233,6 +233,261 @@ export class AdminController {
     return { logs, count: logs.length };
   }
 
+  @Get('dashboard')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get admin dashboard statistics' })
+  async getDashboardStats() {
+    const [totalUsers, totalProviders, totalBookings] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.providerProfile.count(),
+      this.prisma.booking.count({
+        where: { status: { in: ['CONFIRMED', 'COMPLETED'] } },
+      }),
+    ]);
+
+    // Calculate revenue from bookings
+    const revenueData = await this.prisma.booking.aggregate({
+      where: {
+        status: { in: ['CONFIRMED', 'COMPLETED'] },
+      },
+      _sum: {
+        totalPrice: true,
+      },
+    });
+
+    return {
+      totalUsers,
+      totalProviders,
+      totalBookings,
+      revenue: revenueData._sum?.totalPrice || 0,
+      openDisputes: 0, // Stub
+    };
+  }
+
+  @Get('users')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get all users with filters' })
+  @ApiQuery({ name: 'role', required: false, enum: ['TRAVELER', 'ADMIN'] })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  async getUsers(@Query('role') role?: string, @Query('search') search?: string) {
+    const where: any = {};
+
+    if (role) {
+      where.role = role;
+    }
+
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const users = await this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+        emailVerified: true,
+        phoneVerified: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return { users, count: users.length };
+  }
+
+  @Post('users/:userId/toggle-role')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Toggle user role between TRAVELER and ADMIN' })
+  async toggleUserRole(@Param('userId') userId: string, @Request() req: any) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const newRole = user.role === 'ADMIN' ? 'TRAVELER' : 'ADMIN';
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole as any },
+    });
+
+    await this.auditService.log({
+      userId: req.user.id,
+      action: 'USER_ROLE_CHANGED',
+      targetType: 'User',
+      targetId: userId,
+      metadata: { email: user.email, oldRole: user.role, newRole },
+    });
+
+    return { success: true, user: updatedUser };
+  }
+
+  @Post('users/:userId/delete')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Delete a user account' })
+  async deleteUser(@Param('userId') userId: string, @Request() req: any) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    await this.auditService.log({
+      userId: req.user.id,
+      action: 'USER_DELETED',
+      targetType: 'User',
+      targetId: userId,
+      metadata: { email: user.email },
+    });
+
+    return { success: true };
+  }
+
+  @Get('providers')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get all providers with filters' })
+  @ApiQuery({ name: 'verificationStatus', required: false })
+  @ApiQuery({ name: 'providerType', required: false })
+  async getProviders(
+    @Query('verificationStatus') verificationStatus?: string,
+    @Query('providerType') providerType?: string,
+  ) {
+    const where: any = {};
+
+    if (verificationStatus) {
+      where.verificationStatus = verificationStatus;
+    }
+
+    if (providerType) {
+      where.providerType = providerType;
+    }
+
+    const providers = await this.prisma.providerProfile.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    // Count packages for each provider manually
+    const providersWithCounts = await Promise.all(
+      providers.map(async (p) => {
+        const [hotelCount, tourCount] = await Promise.all([
+          this.prisma.hotelPackage.count({ where: { providerId: p.id } }),
+          this.prisma.tourPackage.count({ where: { providerId: p.id } }),
+        ]);
+
+        return {
+          ...p,
+          _count: {
+            hotelPackages: hotelCount,
+            tourPackages: tourCount,
+          },
+        };
+      }),
+    );
+
+    return { providers: providersWithCounts, count: providersWithCounts.length };
+  }
+
+  @Post('providers/:providerId/toggle-status')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Toggle provider between APPROVED and REJECTED' })
+  async toggleProviderStatus(@Param('providerId') providerId: string, @Request() req: any) {
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { id: providerId },
+    });
+
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+
+    const newStatus =
+      provider.verificationStatus === 'APPROVED' ? 'REJECTED' : 'APPROVED';
+
+    const updatedProvider = await this.prisma.providerProfile.update({
+      where: { id: providerId },
+      data: { verificationStatus: newStatus as any },
+    });
+
+    await this.auditService.log({
+      userId: req.user.id,
+      action: `PROVIDER_${newStatus}`,
+      targetType: 'ProviderProfile',
+      targetId: providerId,
+      metadata: { businessName: provider.businessName },
+    });
+
+    return { success: true, provider: updatedProvider };
+  }
+
+  @Get('disputes')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get all disputes with filters (stub)' })
+  async getDisputes() {
+    // Stub - return empty array as disputes table may not exist
+    return { disputes: [], count: 0 };
+  }
+
+  @Post('disputes/:disputeId/assign')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Assign dispute to support agent (stub)' })
+  async assignDispute(
+    @Param('disputeId') disputeId: string,
+    @Body() body: { assignedTo: string },
+    @Request() req: any,
+  ) {
+    // Stub - for now just log the action
+    await this.auditService.log({
+      userId: req.user.id,
+      action: 'DISPUTE_ASSIGNED',
+      targetType: 'Dispute',
+      targetId: disputeId,
+      metadata: { assignedTo: body.assignedTo },
+    });
+
+    return { success: true, message: 'Dispute assigned (stub)' };
+  }
+
+  @Post('disputes/:disputeId/resolve')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Resolve a dispute (stub)' })
+  async resolveDispute(
+    @Param('disputeId') disputeId: string,
+    @Body() body: { resolution: string },
+    @Request() req: any,
+  ) {
+    // Stub - for now just log the action
+    await this.auditService.log({
+      userId: req.user.id,
+      action: 'DISPUTE_RESOLVED',
+      targetType: 'Dispute',
+      targetId: disputeId,
+      metadata: { resolution: body.resolution },
+    });
+
+    return { success: true, message: 'Dispute resolved (stub)' };
+  }
+
   private getRequiredDocuments(providerType: string): string[] {
     const required = ['business_license', 'owner_id', 'tax_certificate'];
     if (providerType === 'TOUR_OPERATOR') {

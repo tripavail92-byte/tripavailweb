@@ -1,32 +1,76 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { logout, useAuthContext } from '@/app/providers';
 import { setAccessToken, startOtp, verifyOtp } from '@/lib/api-client';
 
 export default function LoginPage() {
+  const router = useRouter();
   const { refresh, user } = useAuthContext();
   const [channel, setChannel] = useState<'phone' | 'email'>('email');
   const [contact, setContact] = useState('test@example.com');
-  const [code, setCode] = useState('0000');
+  const [code, setCode] = useState('');
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const redirecting = useRef(false);
+
+  // If already logged in, quietly send the user away so the OTP UI stops appearing post-login
+  useEffect(() => {
+    if (user && !redirecting.current) {
+      redirecting.current = true;
+      router.replace('/traveler/discovery');
+    }
+  }, [user, router]);
+
+  if (user) {
+    return null;
+  }
 
   const handleStart = async (event: FormEvent) => {
     event.preventDefault();
     try {
       setLoading(true);
       setMessage(null);
-      await startOtp({
+      setCode('');
+      setGeneratedCode(null);
+      
+      console.log('Calling startOtp...');
+      const response = await startOtp({
         channel,
         email: channel === 'email' ? contact : undefined,
         phone: channel === 'phone' ? contact : undefined,
         purpose: 'login',
       });
-      setMessage('OTP started. Check your channel for the code.');
+      
+      console.log('Response received:', response);
+      console.log('Response type:', typeof response);
+      console.log('Response is object?', typeof response === 'object');
+      
+      if (!response) {
+        setMessage('ERROR: No response received from backend');
+        return;
+      }
+      
+      // Try different ways to access the code
+      const codeValue = response.code || (response as any)?.code;
+      console.log('Code value:', codeValue);
+      
+      if (codeValue) {
+        setGeneratedCode(codeValue);
+        setCode(codeValue);
+        setMessage(`✓ CODE: ${codeValue}`);
+      } else {
+        // If no code, show the full response so we can debug
+        const responseStr = JSON.stringify(response);
+        console.log('Full response string:', responseStr);
+        setMessage(`Response has no code property. Full response: ${responseStr}`);
+      }
     } catch (err) {
+      console.error('Error in handleStart:', err);
       const msg = err instanceof Error ? err.message : 'Failed to start OTP';
-      setMessage(msg);
+      setMessage(`ERROR: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -46,7 +90,9 @@ export default function LoginPage() {
       if (tokens.accessToken) {
         setAccessToken(tokens.accessToken);
         await refresh();
-        setMessage('Logged in. Session refreshed.');
+        setMessage('Logged in. Redirecting...');
+        // Redirect to home after a brief delay
+        setTimeout(() => router.push('/'), 500);
       } else {
         setMessage('No accessToken returned.');
       }
@@ -67,7 +113,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-xl space-y-4 p-6">
       <h1 className="text-2xl font-semibold">Login (OTP)</h1>
-      {user ? <p className="text-sm text-neutral-700">Current user: {user.email}</p> : <p className="text-sm">Not logged in.</p>}
+      <p className="text-sm">Not logged in.</p>
 
       <form onSubmit={handleStart} className="space-y-3 rounded-lg border bg-white p-4 shadow-sm">
         <div className="flex gap-2 text-sm">

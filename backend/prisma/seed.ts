@@ -14,17 +14,76 @@ async function main() {
   await prisma.tourDeparture.deleteMany();
   await prisma.pickup.deleteMany();
   await prisma.itineraryDay.deleteMany();
+  await prisma.addOn.deleteMany();
   await prisma.tourPackage.deleteMany();
+  await prisma.hotelPackageAmenity.deleteMany();
   await prisma.hotelPackage.deleteMany();
   await prisma.inventoryNight.deleteMany();
   await prisma.room.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.kycDocument.deleteMany();
   await prisma.providerOnboarding.deleteMany();
   await prisma.providerProfile.deleteMany();
   await prisma.authOtp.deleteMany();
   await prisma.review.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.user.deleteMany();
+
+  // 0. Create Cancellation Policies (Week 8)
+  console.log('📋 Creating cancellation policies...');
+  await prisma.cancellationPolicy.upsert({
+    where: { type: 'FLEXIBLE' },
+    update: {},
+    create: {
+      type: 'FLEXIBLE',
+      name: 'Flexible',
+      description: 'Free cancellation until 1 day before arrival',
+      fullRefundUntilDays: 1,
+      partialRefundUntilDays: null,
+      noRefundUntilDays: 0,
+    },
+  });
+
+  await prisma.cancellationPolicy.upsert({
+    where: { type: 'MODERATE' },
+    update: {},
+    create: {
+      type: 'MODERATE',
+      name: 'Moderate',
+      description: 'Free cancellation until 7 days before arrival, 50% refund until 3 days',
+      fullRefundUntilDays: 7,
+      partialRefundUntilDays: 3,
+      noRefundUntilDays: 0,
+    },
+  });
+
+  await prisma.cancellationPolicy.upsert({
+    where: { type: 'STRICT' },
+    update: {},
+    create: {
+      type: 'STRICT',
+      name: 'Strict',
+      description: 'Free cancellation until 30 days before arrival, 50% refund until 14 days',
+      fullRefundUntilDays: 30,
+      partialRefundUntilDays: 14,
+      noRefundUntilDays: 0,
+    },
+  });
+
+  await prisma.cancellationPolicy.upsert({
+    where: { type: 'NON_REFUNDABLE' },
+    update: {},
+    create: {
+      type: 'NON_REFUNDABLE',
+      name: 'Non-Refundable',
+      description: 'No refunds after booking confirmed',
+      fullRefundUntilDays: 999,
+      partialRefundUntilDays: null,
+      noRefundUntilDays: 0,
+    },
+  });
+
+  console.log('✅ Cancellation policies seeded');
 
   // 1. Create Users
   console.log('👤 Creating users...');
@@ -382,13 +441,11 @@ async function main() {
   const completedBooking = await prisma.booking.create({
     data: {
       userId: traveler1.id,
-      providerId: hotelProvider.id,
-      productType: 'STAY',
-      productId: hotel1.id,
       status: 'COMPLETED',
-      checkIn: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      checkOut: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      guests: 2,
+      checkInDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      numberOfGuests: 2,
+      numberOfRooms: 1,
       totalPrice: 899.97,
       currency: 'USD',
       priceSnapshot: {
@@ -400,7 +457,12 @@ async function main() {
         fees: 25.0,
         total: 1014.96,
       },
+      cancellationPolicy: 'FLEXIBLE',
       idempotencyKey: randomUUID(),
+      quotedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 - 60 * 60 * 1000),
+      heldAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 - 30 * 60 * 1000),
+      confirmedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      completedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -409,9 +471,9 @@ async function main() {
       bookingId: completedBooking.id,
       amount: 1014.96,
       currency: 'USD',
-      provider: 'STRIPE',
-      providerTxnId: 'pi_mock_' + randomUUID().substring(0, 8),
-      status: 'succeeded',
+      paymentMethodId: 'pm_mock_stripe_' + randomUUID().substring(0, 16),
+      paymentIntentId: 'pi_' + randomUUID().substring(0, 24),
+      status: 'CAPTURED',
     },
   });
 
@@ -420,24 +482,27 @@ async function main() {
     data: [
       {
         bookingId: completedBooking.id,
-        type: 'DEBIT',
-        account: 'TRAVELER',
+        type: 'BOOKING_CONFIRMED',
+        debitAccount: 'traveler:' + traveler1.id,
+        creditAccount: 'platform',
         amount: 1014.96,
         currency: 'USD',
         description: 'Payment for booking',
       },
       {
         bookingId: completedBooking.id,
-        type: 'CREDIT',
-        account: 'PROVIDER_EARNINGS',
+        type: 'BOOKING_CONFIRMED',
+        debitAccount: 'platform',
+        creditAccount: 'provider:earnings',
         amount: 913.46,
         currency: 'USD',
         description: 'Provider earnings (90%)',
       },
       {
         bookingId: completedBooking.id,
-        type: 'CREDIT',
-        account: 'COMMISSION',
+        type: 'BOOKING_CONFIRMED',
+        debitAccount: 'platform',
+        creditAccount: 'platform:commission',
         amount: 101.5,
         currency: 'USD',
         description: 'Platform commission (10%)',
@@ -449,13 +514,12 @@ async function main() {
   await prisma.booking.create({
     data: {
       userId: traveler2.id,
-      providerId: tourProvider.id,
-      productType: 'TOUR_PACKAGE',
-      productId: tourPackage.id,
+      tourPackageId: tourPackage.id,
       status: 'CONFIRMED',
-      checkIn: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      checkOut: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000),
-      guests: 2,
+      departureDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      checkInDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000),
+      numberOfGuests: 2,
       totalPrice: 2599.98,
       currency: 'USD',
       priceSnapshot: {
@@ -467,7 +531,11 @@ async function main() {
         fees: 50.0,
         total: 2909.98,
       },
+      cancellationPolicy: 'MODERATE',
       idempotencyKey: randomUUID(),
+      quotedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      heldAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000),
+      confirmedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     },
   });
 

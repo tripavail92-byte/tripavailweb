@@ -1,0 +1,117 @@
+/**
+ * Simple booking flow test using the Bookings API
+ * 
+ * This script tests the booking state machine by calling the actual API endpoints
+ * 
+ * Usage: npx ts-node src/scripts/test-booking-flow.ts
+ */
+
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function testBookingFlow() {
+  console.log('🚀 Starting Booking Flow Database Test\n');
+  console.log('This test verifies the database schema and Stripe integration\n');
+
+  try {
+    // Step 1: Check for published hotel package
+    console.log('📦 Checking for published hotel packages...');
+    const hotelPackage = await prisma.hotelPackage.findFirst({
+      where: {
+        status: 'PUBLISHED',
+      },
+    });
+
+    if (!hotelPackage) {
+      console.log('⚠️  No published hotel packages found.');
+      console.log('   Please create and publish a hotel package first.\n');
+      console.log('   Steps:');
+      console.log('   1. Complete hotel property onboarding');
+      console.log('   2. Create a hotel package');
+      console.log('   3. Publish the package\n');
+      return;
+    }
+
+    console.log(`✅ Found package: "${hotelPackage.name}"`);
+    console.log(`   Package ID: ${hotelPackage.id}`);
+    console.log(`   Price per person: $${hotelPackage.pricePerPerson.toString()}\n`);
+
+    // Step 2: Check for users
+    console.log('👤 Checking for test users...');
+    const testUser = await prisma.user.findFirst({
+      where: {
+        role: 'TRAVELER',
+      },
+    });
+
+    if (!testUser) {
+      console.log('⚠️  No traveler users found.');
+      console.log('   Please create a user account first.\n');
+      return;
+    }
+
+    console.log(`✅ Found user: ${testUser.email || testUser.phone}`);
+    console.log(`   User ID: ${testUser.id}\n`);
+
+    // Step 3: Check Stripe configuration
+    console.log('💳 Checking Stripe configuration...');
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    
+    if (!stripeKey || stripeKey === 'sk_test_YOUR_KEY_HERE') {
+      console.log('❌ Stripe not configured!');
+      console.log('   Please add your real Stripe keys to backend/.env\n');
+      return;
+    }
+
+    console.log(`✅ Stripe configured: ${stripeKey.substring(0, 20)}...\n`);
+
+    // Step 4: Show test data for manual testing
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ PREREQUISITES CHECK COMPLETE!\n');
+    console.log('Test Data Available:');
+    console.log(`  User ID: ${testUser.id}`);
+    console.log(`  Package ID: ${hotelPackage.id}`);
+    console.log(`  Package Type: HOTEL`);
+    console.log(`  Price: $${hotelPackage.pricePerPerson.toString()} per person\n`);
+    
+    console.log('To test the booking flow, use the HTTP test file:');
+    console.log('  1. Open: backend/src/scripts/test-booking-api.http');
+    console.log('  2. Update the variables at the top:');
+    console.log(`     @userId = ${testUser.id}`);
+    console.log(`     @hotelPackageId = ${hotelPackage.id}`);
+    console.log(`     @providerId = ${hotelPackage.providerId}`);
+    console.log('  3. Click "Send Request" on each endpoint\n');
+    
+    console.log('Or test via curl:');
+    console.log(`\ncurl -X POST http://localhost:4100/v1/bookings/quote \\`);
+    console.log(`  -H "Content-Type: application/json" \\`);
+    console.log(`  -d '{`);
+    console.log(`    "userId": "${testUser.id}",`);
+    console.log(`    "hotelPackageId": "${hotelPackage.id}",`);
+    console.log(`    "numberOfGuests": 2,`);
+    console.log(`    "checkInDate": "2026-01-15",`);
+    console.log(`    "checkOutDate": "2026-01-17"`);
+    console.log(`  }'\n`);
+    
+    console.log('Test Cards (Stripe):');
+    console.log('  Success: 4242 4242 4242 4242');
+    console.log('  Decline: 4000 0000 0000 0002');
+    console.log('  Any future expiry (e.g., 12/28) and any CVC (e.g., 123)');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  } catch (error) {
+    console.error('❌ Error during test:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// Run the test
+testBookingFlow()
+  .catch((error) => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+

@@ -43,6 +43,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
             </Link>
             <nav className="flex items-center gap-3 text-sm text-neutral-700">
               <Link href="/operator/onboarding">Onboarding</Link>
+              <Link href="/operator/profile">Profile</Link>
               <Link href="/operator/tours">Tours</Link>
               <Link href="/operator/departures">Departures</Link>
             </nav>

@@ -12,11 +12,13 @@ async function bootstrap() {
   app.use(helmet());
 
   // CORS configuration
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3100'];
   app.enableCors({
-    origin: ['http://localhost:4000'],
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'Idempotency-Key'],
+    maxAge: 3600,
   });
 
   // Global validation pipe
@@ -58,8 +60,20 @@ async function bootstrap() {
     customCss: '.swagger-ui .topbar { display: none }',
   });
 
-  await app.listen(4100, '0.0.0.0');
-  console.log(`Application is running on: http://localhost:4100`);
-  console.log(`API Documentation available at: http://localhost:4100/api`);
+  const port = process.env.PORT || 8001;
+  const host = process.env.HOST || '0.0.0.0';
+  
+  try {
+    await app.listen(port, host);
+    console.log(`✅ Application is running on: http://${host}:${port}`);
+    console.log(`✅ API Documentation available at: http://${host}:${port}/api`);
+    console.log(`✅ Health check: http://${host}:${port}/v1/health`);
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    throw error;
+  }
 }
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('❌ Bootstrap failed:', error);
+  process.exit(1);
+});

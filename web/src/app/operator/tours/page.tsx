@@ -10,9 +10,12 @@ import {
   updateTourDepartures,
   updateTourHighlights,
   updateTourInclusions,
+  updateTourAmenities,
   updateTourItinerary,
   updateTourPickups,
 } from '@/lib/api-client';
+import { LocationAutocomplete } from '@/components/LocationAutocomplete';
+import { LocationMap } from '@/components/LocationMap';
 
 export default function OperatorToursPage() {
   const { user } = useAuth();
@@ -33,11 +36,14 @@ export default function OperatorToursPage() {
     maxSeats: 20,
   });
   const [departuresText, setDeparturesText] = useState('2026-01-15\n2026-02-01');
-  const [pickupsText, setPickupsText] = useState('Airport\nHotel Lobby');
   const [highlightsText, setHighlightsText] = useState('Sunrise hike\nLocal cuisine');
   const [itineraryText, setItineraryText] = useState('Day 1: Arrival and city walk\nDay 2: Mountain hike');
   const [inclusionsText, setInclusionsText] = useState('Guide\nMeals');
   const [exclusionsText, setExclusionsText] = useState('Flights');
+  const [amenityIds, setAmenityIds] = useState(''); // Step 8: Amenities (comma-separated IDs)
+  const [pickupLocations, setPickupLocations] = useState<
+    Array<{ name: string; lat?: number; lng?: number }>
+  >([{ name: 'Airport' }, { name: 'Hotel Lobby' }]);
   const [recent, setRecent] = useState<{ id?: string; name?: string; status?: string }[]>([]);
 
   useEffect(() => {
@@ -93,11 +99,32 @@ export default function OperatorToursPage() {
   const handlePickups = async (event: FormEvent) => {
     event.preventDefault();
     if (!packageId) return setStatusMessage('Set packageId from step1 first');
-    const pickups = pickupsText
-      .split('\n')
-      .map((d) => d.trim())
-      .filter(Boolean);
+    const pickups = pickupLocations.map((loc) => loc.name);
     await runStep(() => updateTourPickups(operatorProfile.id, packageId, pickups));
+  };
+
+  const handleAddPickupLocation = () => {
+    setPickupLocations([...pickupLocations, { name: '' }]);
+  };
+
+  const handleRemovePickupLocation = (index: number) => {
+    setPickupLocations(pickupLocations.filter((_, i) => i !== index));
+  };
+
+  const handlePickupNameChange = (index: number, name: string) => {
+    const updated = [...pickupLocations];
+    updated[index].name = name;
+    setPickupLocations(updated);
+  };
+
+  const handlePickupLocationSelect = (index: number, location: { lat: number; lng: number; address?: string }) => {
+    const updated = [...pickupLocations];
+    updated[index] = {
+      name: updated[index].name || location.address || `Location ${index + 1}`,
+      lat: location.lat,
+      lng: location.lng,
+    };
+    setPickupLocations(updated);
   };
 
   const handleHighlights = async (event: FormEvent) => {
@@ -131,6 +158,19 @@ export default function OperatorToursPage() {
       .map((d) => d.trim())
       .filter(Boolean);
     await runStep(() => updateTourInclusions(operatorProfile.id, packageId, inclusions, exclusions));
+  };
+
+  const handleAmenities = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!packageId) return setStatusMessage('Set packageId from step1 first');
+    const ids = amenityIds
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    if (ids.length === 0) {
+      return setStatusMessage('Enter at least one amenity ID');
+    }
+    await runStep(() => updateTourAmenities(operatorProfile.id, packageId, ids));
   };
 
   const handleStatus = async (action: 'publish' | 'pause' | 'archive') => {
@@ -222,14 +262,62 @@ export default function OperatorToursPage() {
           <p className="text-xs text-neutral-600">One date per line (YYYY-MM-DD)</p>
         </FormCard>
 
-        <FormCard title="Step 4: Pickups" onSubmit={handlePickups} disabled={loading}>
-          <textarea
-            className="w-full rounded border px-3 py-2 text-sm"
-            rows={3}
-            value={pickupsText}
-            onChange={(e) => setPickupsText(e.target.value)}
-          />
-          <p className="text-xs text-neutral-600">One pickup location per line</p>
+        <FormCard title="Step 4: Pickups & Locations" onSubmit={handlePickups} disabled={loading}>
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-600">
+              Add pickup locations with optional coordinates. Customers will see these as options.
+            </p>
+
+            {pickupLocations.map((location, index) => (
+              <div key={index} className="rounded-lg border border-gray-300 p-4 space-y-3 bg-gray-50">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-neutral-900">
+                      Pickup Location {index + 1}
+                    </label>
+                    <input
+                      type="text"
+                      value={location.name}
+                      onChange={(e) => handlePickupNameChange(index, e.target.value)}
+                      placeholder="e.g., Bangkok Airport"
+                      className="mt-1 w-full rounded border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  {pickupLocations.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePickupLocation(index)}
+                      className="rounded px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {location.lat && location.lng && (
+                  <div className="rounded bg-blue-50 p-2 text-sm text-blue-700">
+                    📍 {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                  </div>
+                )}
+
+                <LocationAutocomplete
+                  value={location.name}
+                  onLocationSelect={(loc) => handlePickupLocationSelect(index, loc)}
+                  onAddressChange={(address) => handlePickupNameChange(index, address)}
+                  placeholder="Search location or drag on map..."
+                  className="text-sm"
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={handleAddPickupLocation}
+              className="w-full rounded border border-dashed border-gray-400 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              + Add Another Pickup Location
+            </button>
+          </div>
         </FormCard>
 
         <FormCard title="Step 5: Highlights" onSubmit={handleHighlights} disabled={loading}>
@@ -273,6 +361,19 @@ export default function OperatorToursPage() {
               <p className="text-xs text-neutral-600">Exclusions (one per line)</p>
             </div>
           </div>
+        </FormCard>
+
+        <FormCard title="Step 8: Amenities" onSubmit={handleAmenities} disabled={loading}>
+          <input
+            type="text"
+            className="w-full rounded border px-3 py-2 text-sm"
+            placeholder="Amenity IDs (comma-separated)"
+            value={amenityIds}
+            onChange={(e) => setAmenityIds(e.target.value)}
+          />
+          <p className="text-xs text-neutral-600 mt-1">
+            Enter amenity IDs from the global Amenity table, separated by commas (e.g., amenity_1, amenity_2)
+          </p>
         </FormCard>
       </div>
 

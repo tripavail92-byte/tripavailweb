@@ -9,10 +9,49 @@ import { PrismaService } from '../../prisma.service';
 import { CreateHotelPackageDto } from './dto/create-hotel-package.dto';
 import { ListHotelPackagesQueryDto } from './dto/list-hotel-packages.query.dto';
 import { UpdateHotelPackageDto } from './dto/update-hotel-package.dto';
+import { DiscountSettingsDto } from '../dto/discount-settings.dto';
+import { HOTEL_PACKAGE_TEMPLATES } from './hotel-package-templates';
 
 @Injectable()
 export class HotelPackagesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Normalize templateId to slug format for API responses.
+   * If templateId is already a slug, return as-is.
+   * If it's a numeric ID (database PK), map to the corresponding slug.
+   */
+  private normalizeTemplateId(templateId: string): string {
+    // Check if it's already a valid slug
+    const validSlugs = HOTEL_PACKAGE_TEMPLATES.map((t) => t.id);
+    if (validSlugs.includes(templateId)) {
+      return templateId;
+    }
+
+    // If it's a numeric ID or unknown, try to map it
+    // For now, default to the first template if not found
+    // In production, you'd want to store slug in DB directly
+    console.warn(`Unknown templateId: ${templateId}, defaulting to first template`);
+    return HOTEL_PACKAGE_TEMPLATES[0]?.id || 'weekend-getaway';
+  }
+
+  /**
+   * Transform hotel package response to ensure templateId is slug-based
+   */
+  private transformPackageResponse(pkg: any): any {
+    if (!pkg) return pkg;
+    return {
+      ...pkg,
+      templateId: this.normalizeTemplateId(pkg.templateId),
+    };
+  }
+
+  /**
+   * Transform array of packages
+   */
+  private transformPackageResponses(packages: any[]): any[] {
+    return packages.map((pkg) => this.transformPackageResponse(pkg));
+  }
 
   list(query: ListHotelPackagesQueryDto) {
     const take = query.pageSize ?? 20;
@@ -46,7 +85,12 @@ export class HotelPackagesService {
         tx.hotelPackage.count({ where }),
       ]);
 
-      return { items, total, page: query.page ?? 1, pageSize: query.pageSize ?? 20 };
+      return {
+        items: this.transformPackageResponses(items),
+        total,
+        page: query.page ?? 1,
+        pageSize: query.pageSize ?? 20,
+      };
     });
   }
 
@@ -99,7 +143,8 @@ export class HotelPackagesService {
             }
           : undefined,
       },
-    });
+      include: { amenities: { include: { amenity: true } } },
+    }).then((pkg) => this.transformPackageResponse(pkg));
   }
 
   private async getOwnedPackageOrThrow(providerId: string, packageId: string) {
@@ -119,10 +164,12 @@ export class HotelPackagesService {
       throw new BadRequestException('Only DRAFT packages can be published');
     }
 
-    return this.prisma.hotelPackage.update({
+    const updated = await this.prisma.hotelPackage.update({
       where: { id: packageId },
       data: { status: 'PUBLISHED', publishedAt: new Date() },
+      include: { amenities: { include: { amenity: true } } },
     });
+    return this.transformPackageResponse(updated);
   }
 
   async pausePackage(providerId: string, packageId: string) {
@@ -131,22 +178,30 @@ export class HotelPackagesService {
       throw new BadRequestException('Only PUBLISHED packages can be paused');
     }
 
-    return this.prisma.hotelPackage.update({
+    const updated = await this.prisma.hotelPackage.update({
       where: { id: packageId },
       data: { status: 'PAUSED' },
+      include: { amenities: { include: { amenity: true } } },
     });
+    return this.transformPackageResponse(updated);
   }
 
   async archivePackage(providerId: string, packageId: string) {
     const pkg = await this.getOwnedPackageOrThrow(providerId, packageId);
     if (pkg.status === 'ARCHIVED') {
-      return this.prisma.hotelPackage.findUniqueOrThrow({ where: { id: packageId } });
+      const archived = await this.prisma.hotelPackage.findUniqueOrThrow({
+        where: { id: packageId },
+        include: { amenities: { include: { amenity: true } } },
+      });
+      return this.transformPackageResponse(archived);
     }
 
-    return this.prisma.hotelPackage.update({
+    const updated = await this.prisma.hotelPackage.update({
       where: { id: packageId },
       data: { status: 'ARCHIVED' },
+      include: { amenities: { include: { amenity: true } } },
     });
+    return this.transformPackageResponse(updated);
   }
 
   async updatePackage(providerId: string, packageId: string, dto: UpdateHotelPackageDto) {
@@ -183,17 +238,26 @@ export class HotelPackagesService {
 
     const amenityIds = dto.amenityIds;
     if (!amenityIds) {
-      return this.prisma.hotelPackage.update({ where: { id: packageId }, data: updateData });
+      const updated = await this.prisma.hotelPackage.update({
+        where: { id: packageId },
+        data: updateData,
+        include: { amenities: { include: { amenity: true } } },
+      });
+      return this.transformPackageResponse(updated);
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.hotelPackage.update({ where: { id: packageId }, data: updateData });
+      const updated = await tx.hotelPackage.update({
+        where: { id: packageId },
+        data: updateData,
+        include: { amenities: { include: { amenity: true } } },
+      });
       await tx.hotelPackageAmenity.deleteMany({ where: { packageId } });
       await tx.hotelPackageAmenity.createMany({
         data: amenityIds.map((amenityId) => ({ packageId, amenityId })),
         skipDuplicates: true,
       });
-      return updated;
+      return this.transformPackageResponse(updated);
     });
   }
 
@@ -214,6 +278,24 @@ export class HotelPackagesService {
     if (!pkg) {
       throw new NotFoundException('Hotel package not found');
     }
-    return pkg;
+    return this.transformPackageResponse(pkg);
+  }
+
+  async updateDiscount(providerId: string, packageId: string, dto: DiscountSettingsDto) {
+    const pkg = await this.prisma.hotelPackage.findUnique({ where: { id: packageId } });
+    if (!pkg || pkg.providerId !== providerId) {
+      throw new NotFoundException('Hotel package not found');
+    }
+    const updated = await this.prisma.hotelPackage.update({
+      where: { id: packageId },
+      data: {
+        ...(dto.discountEnabled !== undefined && { discountEnabled: dto.discountEnabled }),
+        ...(dto.discountPercentage !== undefined && { discountPercentage: dto.discountPercentage }),
+        ...(dto.discountStartDate !== undefined && { discountStartDate: dto.discountStartDate ? new Date(dto.discountStartDate) : null }),
+        ...(dto.discountEndDate !== undefined && { discountEndDate: dto.discountEndDate ? new Date(dto.discountEndDate) : null }),
+      },
+      include: { amenities: { include: { amenity: true } } },
+    });
+    return this.transformPackageResponse(updated);
   }
 }

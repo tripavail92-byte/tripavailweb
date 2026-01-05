@@ -17,6 +17,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRATION: z.string().default('24h'),
 
+  // CORS
+  CORS_ORIGINS: z.string().optional(),
+
   // Stripe
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLIC_KEY: z.string().optional(),

@@ -40,7 +40,7 @@ export interface ApiError extends Error {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4100';
 
-function getAccessToken(): string | null {
+export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
 }
@@ -104,8 +104,15 @@ export interface StartOtpPayload {
   purpose: 'login';
 }
 
-export async function startOtp(payload: StartOtpPayload) {
-  return apiFetch('/v1/auth/start', { method: 'POST', body: payload });
+export interface StartOtpResponse {
+  status: string;
+  channel: 'phone' | 'email';
+  target: string;
+  code: string; // Returned in development mode for testing
+}
+
+export async function startOtp(payload: StartOtpPayload): Promise<StartOtpResponse> {
+  return apiFetch<StartOtpResponse>('/v1/auth/start', { method: 'POST', body: payload });
 }
 
 export interface VerifyOtpPayload {
@@ -296,6 +303,32 @@ export async function updateTourInclusions(providerId: string, packageId: string
     method: 'PATCH',
     body: { inclusions, exclusions },
   });
+}
+
+export async function updateTourAmenities(providerId: string, packageId: string, amenityIds: string[]) {
+  return apiFetch(`/v1/tour-packages/${providerId}/packages/${packageId}/step8-amenities`, {
+    method: 'PATCH',
+    body: { amenityIds },
+  });
+}
+
+export interface UpdateOperatorProfilePayload {
+  baseCity?: string;
+  baseLatitude?: number;
+  baseLongitude?: number;
+  meetingPoint?: string;
+  contactPhone?: string;
+}
+
+export async function updateOperatorProfile(providerId: string, payload: UpdateOperatorProfilePayload) {
+  return apiFetch(`/v1/operator-profile/${providerId}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
+export async function getOperatorProfile(providerId: string) {
+  return apiFetch(`/v1/operator-profile/${providerId}`, { method: 'GET' });
 }
 
 export async function mutateTourStatus(

@@ -1,0 +1,109 @@
+###
+# TripAvail Booking API Test Suite
+# Test the complete booking flow with real Stripe integration
+#
+# Prerequisites:
+# 1. Backend running on http://127.0.0.1:5050
+# 2. Real Stripe test keys configured in .env
+# 3. At least one published hotel package in database
+#
+# Test Cards:
+# - Success: 4242 4242 4242 4242
+# - Decline: 4000 0000 0000 0002
+# - 3D Secure: 4000 0025 0000 3155
+###
+
+@baseUrl = http://localhost:8001/v1
+@altBaseUrl = http://192.168.18.56:8001/v1
+@providerId = cmjzqvtqf000ahf3h0a1mg06j
+@hotelPackageId = cmjzqvtsg0087hf3hkpsntf1q
+@userId = cmjzqvtpx0004hf3h3rw48ycq
+@bookingId = REPLACE_WITH_BOOKING_ID_FROM_STEP_1
+
+###
+# Step 1: Create QUOTE
+POST {{baseUrl}}/bookings/quote
+
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "packageType": "HOTEL",
+  "hotelPackageId": "{{hotelPackageId}}",
+  "guestCount": 2,
+  "checkInDate": "2026-01-15",
+  "checkOutDate": "2026-01-17",
+  "addOns": []
+}
+
+###
+# Step 2: Create HOLD (use bookingId from Step 1)
+POST {{baseUrl}}/bookings/hold
+Content-Type: application/json
+Idempotency-Key: hold-{{$timestamp}}
+
+{
+  "bookingId": "{{bookingId}}"
+}
+
+###
+# Step 3: Pre-authorize Payment with Stripe
+POST {{baseUrl}}/payments/pre-authorize
+Content-Type: application/json
+Idempotency-Key: payment-{{$timestamp}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "paymentMethod": "pm_card_visa"
+}
+
+###
+# Alternative: Test with token (simulated card entry)
+POST {{baseUrl}}/payments/pre-authorize
+Content-Type: application/json
+Idempotency-Key: payment-{{$timestamp}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "paymentMethodToken": "tok_visa"
+}
+
+###
+# Step 4: Confirm Booking (captures payment)
+POST {{baseUrl}}/bookings/{{bookingId}}/confirm
+Content-Type: application/json
+Idempotency-Key: confirm-{{$timestamp}}
+
+{}
+
+###
+# Test: Cancel by Guest (before confirmation)
+POST {{baseUrl}}/bookings/{{bookingId}}/cancel/guest
+Content-Type: application/json
+Idempotency-Key: cancel-guest-{{$timestamp}}
+
+{
+  "reason": "Changed plans"
+}
+
+###
+# Test: Cancel by Provider
+POST {{baseUrl}}/bookings/{{bookingId}}/cancel/provider
+Content-Type: application/json
+Idempotency-Key: cancel-provider-{{$timestamp}}
+
+{
+  "reason": "Property unavailable due to maintenance"
+}
+
+###
+# Get Booking Details
+GET {{baseUrl}}/bookings/{{bookingId}}
+
+###
+# Health Check
+GET {{baseUrl}}/health
+
+###
+# Ready Check (includes Stripe connectivity)
+GET {{baseUrl}}/health/ready

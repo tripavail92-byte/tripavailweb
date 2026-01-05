@@ -62,7 +62,20 @@ export default function HostDashboardPage() {
   }, [packages]);
 
   if (!hotelProfile) {
-    return null;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">Welcome to TripAvail Host</h2>
+          <p className="text-neutral-600">Complete onboarding to start listing your property</p>
+          <Link
+            href="/host/onboarding"
+            className="inline-block rounded-md bg-black px-6 py-3 text-white font-medium"
+          >
+            Start Onboarding
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

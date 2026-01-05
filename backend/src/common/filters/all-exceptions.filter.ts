@@ -22,6 +22,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       requestId: request.headers['x-request-id'] || 'unknown',
     };
 
+    // Log ALL exceptions to debug auth issues
+    console.log('[AllExceptionsFilter] Exception caught:', {
+      status,
+      message,
+      path: request.url,
+      exception: exception instanceof Error ? exception.message : exception,
+    });
+
     // Log error details (in production, use proper logger like Winston)
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
       console.error('Unhandled exception:', exception);

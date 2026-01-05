@@ -10,9 +10,11 @@
     "openapi:generate": "openapi-typescript ../backend/openapi/openapi.json -o src/lib/api-types.ts"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
     "next": "16.1.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "styled-jsx": "^5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

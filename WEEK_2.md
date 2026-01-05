@@ -38,6 +38,7 @@
 **Morning (2.5 hours)**
 
 - [ ] Review blueprint entity list and map to Prisma models
+- [ ] Implement soft-delete pattern (`deletedAt` field) for critical models
 - [ ] Expand `prisma/schema.prisma` with core entities (users/auth/provider)
 
 ```prisma
@@ -64,6 +65,7 @@ model User {
   phoneVerified Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime? // For soft deletes
 
   @@index([email])
   @@index([phone])

@@ -19,27 +19,71 @@ export default function AdminDashboard() {
     openDisputes: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch from /v1/admin/dashboard
-    // Stub data for now
-    setStats({
-      totalUsers: 1234,
-      totalProviders: 89,
-      totalBookings: 5678,
-      revenue: 234000,
-      openDisputes: 3,
-    });
-    setLoading(false);
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Not authenticated');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:4100/v1/admin/dashboard', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+          setError(null);
+        } else if (response.status === 404) {
+          // Endpoint not available yet, use stub data
+          setStats({
+            totalUsers: 0,
+            totalProviders: 0,
+            totalBookings: 0,
+            revenue: 0,
+            openDisputes: 0,
+          });
+          setError('Dashboard endpoint in development');
+        } else {
+          setError(`Failed to fetch stats: ${response.statusText}`);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Network error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
   }, []);
 
   if (loading) {
-    return <div>Loading dashboard...</div>;
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">System Overview</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">System Overview</h1>
+        {error && (
+          <div className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded">
+            ⚠️ {error}
+          </div>
+        )}
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">

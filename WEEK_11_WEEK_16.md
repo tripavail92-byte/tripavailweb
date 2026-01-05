@@ -78,7 +78,16 @@ async createPaymentIntent(bookingId: string) {
 }
 
 // Handle payment webhook
-async handlePaymentWebhook(event: Stripe.Event) {
+async handlePaymentWebhook(event: Stripe.Event, signature: string) {
+  // 1. Verify webhook signature (CRITICAL)
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  try {
+    stripe.webhooks.constructEvent(event.rawBody, signature, endpointSecret);
+  } catch (err) {
+    throw new BadRequestException('Webhook signature verification failed.');
+  }
+
+  // 2. Handle the event
   if (event.type === 'payment_intent.succeeded') {
     const intent = event.data.object;
     const { bookingId } = intent.metadata;
@@ -89,6 +98,7 @@ async handlePaymentWebhook(event: Stripe.Event) {
 }
 ```
 
+- **Verify webhook signatures to prevent CSRF (MANDATORY)**
 - Store webhook events for audit
 - Implement idempotent webhook processing
 - Test with Stripe test keys
@@ -372,6 +382,11 @@ logger.info('Booking created', {
 
 ### Day 73: Metrics & Monitoring
 
+- Create a "Golden Signals" dashboard (e.g., in Grafana) to track:
+  - **Latency:** API response times (p95, p99).
+  - **Traffic:** Requests per second (RPS) for key services.
+  - **Errors:** HTTP 5xx error rate.
+  - **Saturation:** DB connection pool usage, BullMQ queue depth.
 - Database query time monitoring
 - Redis hit/miss rates
 - Payment success rates

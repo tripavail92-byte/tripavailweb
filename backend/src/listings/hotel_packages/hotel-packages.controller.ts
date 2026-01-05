@@ -20,6 +20,7 @@ import { CreateHotelPackageDto } from './dto/create-hotel-package.dto';
 import { ListHotelPackagesQueryDto } from './dto/list-hotel-packages.query.dto';
 import { HOTEL_PACKAGE_TEMPLATES } from './hotel-package-templates';
 import { UpdateHotelPackageDto } from './dto/update-hotel-package.dto';
+import { DiscountSettingsDto } from '../dto/discount-settings.dto';
 
 @ApiTags('hotel-packages')
 @Controller('hotel-packages')
@@ -129,5 +130,21 @@ export class HotelPackagesController {
   @ApiResponse({ status: 200, description: 'Hotel package deleted' })
   async remove(@Param('providerId') providerId: string, @Param('packageId') packageId: string) {
     return this.service.deletePackage(providerId, packageId);
+  }
+
+  @Patch(':providerId/packages/:packageId/discount')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, ProviderOwnerGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'providerId', description: 'ProviderProfile id' })
+  @ApiParam({ name: 'packageId', description: 'HotelPackage id' })
+  @ApiOperation({ summary: 'Update discount settings for a hotel package' })
+  @ApiResponse({ status: 200, description: 'Hotel package discount updated' })
+  async updateDiscount(
+    @Param('providerId') providerId: string,
+    @Param('packageId') packageId: string,
+    @Body() dto: DiscountSettingsDto,
+  ) {
+    return this.service.updateDiscount(providerId, packageId, dto);
   }
 }

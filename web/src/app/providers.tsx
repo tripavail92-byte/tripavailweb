@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { AuthUser } from '@/lib/api-client';
 import { getAuthMe, setAccessToken } from '@/lib/api-client';
+import { GoogleMapsProvider } from '@/components/GoogleMapsProvider';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -39,7 +40,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({ user, loading, error, refresh }), [user, loading, error]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <GoogleMapsProvider>
+      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    </GoogleMapsProvider>
+  );
 }
 
 export function useAuthContext() {

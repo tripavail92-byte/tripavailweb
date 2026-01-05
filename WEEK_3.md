@@ -49,7 +49,15 @@
 
 - Review completed Week 2 auth (OTP start/verify working)
 - Set up branch: `feature/week3-rbac-onboarding`
-- Pair assignments: Backend lead + Mid-level
+- Pair assignments: Backend lead + Mid-level, Frontend dev
+
+**Frontend Tasks (2-3 hours):**
+
+1.  **Set up OpenAPI Client Generation**
+    - [ ] Configure `openapi-typescript-codegen` or similar tool in the `web` package.
+    - [ ] Add a script to `web/package.json` (e.g., `pnpm gen:api`) to generate the client from `backend/openapi.json`.
+    - [ ] Replace any manual `fetch` calls in `web/src/lib/api-client.ts` with the newly generated client.
+    - [ ] This ensures all frontend API calls are type-safe and in sync with the backend specification.
 
 **Backend Tasks (3-4 hours):**
 

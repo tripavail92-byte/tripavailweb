@@ -1,56 +1,113 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Dispute {
   id: string;
-  complainant: string;
-  type: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'open' | 'in-progress' | 'resolved';
+  complainant?: string;
+  type?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status: string;
   createdAt: string;
 }
 
 export default function AdminDisputesPage() {
-  const [disputes, setDisputes] = useState<Dispute[]>([
-    {
-      id: 'D001',
-      complainant: 'user@example.com',
-      type: 'Cancellation',
-      priority: 'high',
-      status: 'open',
-      createdAt: '2025-12-25',
-    },
-    {
-      id: 'D002',
-      complainant: 'provider@example.com',
-      type: 'Payment',
-      priority: 'urgent',
-      status: 'in-progress',
-      createdAt: '2025-12-26',
-    },
-  ]);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [filter, setFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredDisputes = disputes.filter((d) => !filter || d.status === filter);
+  useEffect(() => {
+    fetchDisputes();
+  }, [filter]);
 
-  const handleAssign = (disputeId: string) => {
-    setDisputes(
-      disputes.map((d) => (d.id === disputeId ? { ...d, status: 'in-progress' } : d)),
-    );
+  const fetchDisputes = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      if (filter) params.append('status', filter);
+
+      const response = await fetch(`http://localhost:4100/v1/admin/disputes?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDisputes(data.disputes || []);
+        setError(null);
+      } else if (response.status === 404) {
+        setError('Disputes endpoint in development');
+        setDisputes([]);
+      } else {
+        setError(`Failed to fetch disputes: ${response.statusText}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResolve = (disputeId: string) => {
-    setDisputes(
-      disputes.map((d) => (d.id === disputeId ? { ...d, status: 'resolved' } : d)),
-    );
+  const handleAssign = async (disputeId: string) => {
+    if (!confirm('Assign this dispute to yourself?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:4100/v1/admin/disputes/${disputeId}/assign`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchDisputes();
+    } catch (error) {
+      alert('Error assigning dispute');
+    }
   };
+
+  const handleResolve = async (disputeId: string) => {
+    if (!confirm('Mark this dispute as resolved?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:4100/v1/admin/disputes/${disputeId}/resolve`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchDisputes();
+    } catch (error) {
+      alert('Error resolving dispute');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading disputes...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dispute Management</h1>
-        <div className="text-sm text-neutral-600">Open: {disputes.filter((d) => d.status === 'open').length}</div>
+        <div className="flex items-center gap-3">
+          {error && (
+            <div className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded">
+              ⚠️ {error}
+            </div>
+          )}
+          <div className="text-sm text-neutral-600">Open: {disputes.filter((d) => d.status === 'open').length}</div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -73,35 +130,15 @@ export default function AdminDisputesPage() {
           <thead className="border-b bg-neutral-50">
             <tr>
               <th className="px-4 py-2 text-left text-sm font-semibold">ID</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold">Complainant</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold">Type</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold">Priority</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Status</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Created</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filteredDisputes.map((dispute) => (
+            {disputes.map((dispute) => (
               <tr key={dispute.id} className="hover:bg-neutral-50">
                 <td className="px-4 py-2 text-sm font-mono">{dispute.id}</td>
-                <td className="px-4 py-2 text-sm">{dispute.complainant}</td>
-                <td className="px-4 py-2 text-sm">{dispute.type}</td>
-                <td className="px-4 py-2 text-sm">
-                  <span
-                    className={`inline-block rounded-full px-2 py-1 text-xs ${
-                      dispute.priority === 'urgent'
-                        ? 'bg-red-100 text-red-800'
-                        : dispute.priority === 'high'
-                          ? 'bg-orange-100 text-orange-800'
-                          : dispute.priority === 'medium'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {dispute.priority.toUpperCase()}
-                  </span>
-                </td>
                 <td className="px-4 py-2 text-sm">
                   <span
                     className={`inline-block rounded-full px-2 py-1 text-xs ${
@@ -115,7 +152,7 @@ export default function AdminDisputesPage() {
                     {dispute.status}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-sm">{dispute.createdAt}</td>
+                <td className="px-4 py-2 text-sm">{new Date(dispute.createdAt).toLocaleDateString()}</td>
                 <td className="px-4 py-2 text-sm">
                   <div className="flex gap-2">
                     {dispute.status === 'open' && (
@@ -142,7 +179,7 @@ export default function AdminDisputesPage() {
         </table>
       </div>
 
-      {filteredDisputes.length === 0 && (
+      {disputes.length === 0 && !loading && (
         <div className="rounded-lg border bg-white p-6 text-center text-neutral-600">
           No disputes found.
         </div>

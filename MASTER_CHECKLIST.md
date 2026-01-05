@@ -179,24 +179,70 @@
 
 ## PHASE 3: BOOKING ENGINE (Weeks 8-10) — 0% Complete
 
-### Week 8: Booking State Machine
+### Week 8: Booking State Machine ⚠️ REFINED - CRITICAL
 
+**Improvements Made:**
+- ✅ Added hold expiration mechanism (auto-release inventory after 15 min)
+- ✅ Added cancellation policy engine (prerequisite to refunds)
+- ✅ Clarified payment timing (pre-auth + capture model)
+- ✅ Snapshot cancellation policy at confirmation time
+
+**Day 36:** Booking Model & Quote State
 - [ ] Booking model finalized
-- [ ] State machine implemented (QUOTE → HOLD → CONFIRM)
-- [ ] Quote endpoint working
-- [ ] Hold endpoint working (with TTL)
+- [ ] Quote creation working (server-side price calculation)
+- [ ] Price snapshot captured (NEVER client math)
+- [ ] Tests passing
+
+**Day 37:** HOLD State & Inventory Locking with Auto-Expiry
+- [ ] Hold endpoint working (15-min TTL)
+- [ ] Inventory locking (Serializable isolation, pessimistic lock)
+- [ ] Hold expiration service (cron job, auto-release)
+- [ ] InventoryNight & TourDeparture models updated
+- [ ] Locked_until timestamp tracking
+- [ ] Idempotency support
+- [ ] Concurrency tests passing (100+ concurrent holds)
+
+**Day 38:** PAYMENT State with Pre-Authorization Flow
+- [ ] Payment intent creation (Stripe pre-auth, no charge)
+- [ ] Payment confirmation (capture funds after pre-auth)
+- [ ] Payment model updated (track pre-auth status)
+- [ ] Idempotency for payment intent
+- [ ] Error handling (card declined, etc.)
+
+**Day 38B:** Cancellation Policy Engine ⚠️ NEW - PREREQUISITE
+- [ ] CancellationPolicy model created (4 types: FLEXIBLE, MODERATE, STRICT, NON_REFUNDABLE)
+- [ ] Cancellation policy service (refund calculation)
+- [ ] Policies seeded in database (standard 4 policies)
+- [ ] Get refund amount based on days-until-checkin
+
+**Day 39:** CONFIRMED State & Ledger Entries
 - [ ] Confirm endpoint working
-- [ ] Cancel endpoint working
-- [ ] Inventory locking (row-level)
-- [ ] Inventory holds table
-- [ ] Hold expiry job (BullMQ)
-- [ ] Idempotency interceptor
-- [ ] Idempotency key storage (Redis)
-- [ ] Price snapshot captured
-- [ ] Snapshot used for refunds
-- [ ] Swagger docs complete
-- [ ] Integration tests passing
-- [ ] Error handling for edge cases
+- [ ] Cancellation policy snapshotted at confirmation
+- [ ] Ledger entries created (double-entry accounting)
+- [ ] Provider earnings calculated
+- [ ] Platform commission tracked
+- [ ] Tests verify balanced ledger
+
+**Day 40:** State Machine Tests & Documentation
+- [ ] Complete booking flow E2E tests
+- [ ] Inventory locking tests
+- [ ] Idempotency tests
+- [ ] Concurrency tests (race conditions)
+- [ ] Ledger balancing tests
+- [ ] Booking documentation complete
+- [ ] API Swagger docs complete
+- [ ] PR merged to main
+
+**Critical Checklist (Do NOT Skip):**
+- ✅ Can create 100 concurrent quotes
+- ✅ Can hold 50 concurrent bookings (overbooking protection)
+- ✅ Hold expires after 15 min (inventory released)
+- ✅ Idempotency prevents duplicate payments
+- ✅ Ledger entries always balanced
+- ✅ Price never changes after CONFIRMED
+- ✅ Cancellation policy snapshotted at CONFIRMED
+- ✅ 70%+ test coverage
+- ✅ 0 flaky tests
 
 **Week 8 Status:** ⬜ Not Started  
 **Expected Completion:** 15 Feb 2026

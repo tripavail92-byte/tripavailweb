@@ -1,0 +1,45 @@
+node_modules
+npm-debug.log
+dist
+.env
+.env.local
+.DS_Store
+backend/src/scripts/test-booking-flow.ts
+# Dependencies
+**/pnpm-store
+**/.next
+**/build
+
+# Git
+.git
+.gitignore
+
+# Development
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Testing
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+Thumbs.db
+
+# CI
+.github
+.gitlab-ci.yml
+.circleci
+
+# Documentation
+docs
+*.md
+!Dockerfile

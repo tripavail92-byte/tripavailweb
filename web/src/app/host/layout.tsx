@@ -6,6 +6,9 @@ import { DashboardSwitcher } from '@/app/components/DashboardSwitcher';
 import { VerificationBanner } from '@/app/components/VerificationBanner';
 import { useAuth } from '@/hooks/useAuth';
 
+// Force dynamic rendering - layout uses auth
+export const dynamic = 'force-dynamic';
+
 export default function HostLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
@@ -18,24 +21,9 @@ export default function HostLayout({ children }: { children: React.ReactNode }) 
     return <div className="p-4">Loading session...</div>;
   }
 
+  // Allow onboarding to work before profile exists
   if (!hotelProfile) {
-    return (
-      <div className="p-6">
-        <DashboardSwitcher />
-        <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm">
-          <h1 className="text-xl font-semibold">Become a hotel partner</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Create your provider profile to unlock the Host dashboard and publish hotel packages.
-          </p>
-          <Link
-            href="/host/onboarding"
-            className="mt-4 inline-block rounded-md bg-black px-4 py-2 text-white"
-          >
-            Start onboarding
-          </Link>
-        </div>
-      </div>
-    );
+    return <>{children}</>;
   }
 
   return (

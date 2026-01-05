@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "cd backend && pnpm build",
+  "outputDirectory": "backend/dist",
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "3000"
+  },
+  "functions": {
+    "backend/dist/main.js": {
+      "runtime": "nodejs20.x",
+      "memory": 1024
+    }
+  }
+}

@@ -654,15 +654,21 @@
    - [ ] Database migrations ready
    - [ ] Environment variables set
 
+   ## Database Migration Policy (MANDATORY)
+
+   - **Staging Validation:** Before deploying to production, all database migrations MUST be run and validated on a staging environment whose database is a 1:1 clone of the production DB. This catches errors related to real-world data.
+   - **Peer Review:** Any Pull Request containing a database migration MUST be formally reviewed and approved by at least one other developer to check for performance bottlenecks or breaking changes.
+
    ## Deployment Steps
 
    1. Create database backup
-   2. Run migrations on production
-   3. Deploy backend (blue-green)
-   4. Deploy frontend (CDN)
-   5. Run smoke tests
-   6. Monitor error tracking (Sentry)
-   7. Monitor logs (Winston)
+   2. Run and validate migrations on staging environment
+   3. Run migrations on production
+   4. Deploy backend (blue-green)
+   5. Deploy frontend (CDN)
+   6. Run smoke tests
+   7. Monitor error tracking (Sentry)
+   8. Monitor logs (Winston)
 
    ## Rollback
 

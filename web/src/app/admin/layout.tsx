@@ -28,12 +28,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!isAdmin) {
     return (
       <div className="flex h-screen items-center justify-center bg-neutral-50">
-        <div className="rounded-lg border bg-white p-6 text-center shadow-sm">
+        <div className="rounded-lg border bg-white p-6 text-center shadow-sm max-w-md">
           <h1 className="text-xl font-semibold text-red-700">Access Denied</h1>
           <p className="mt-2 text-sm text-neutral-600">You do not have admin access.</p>
-          <Link href="/" className="mt-4 inline-block rounded bg-black px-4 py-2 text-white">
-            Go Home
-          </Link>
+          <p className="mt-4 text-xs text-neutral-500">
+            {user ? `Logged in as: ${user.email} (${user.role})` : 'Not logged in'}
+          </p>
+          <div className="mt-4 flex flex-col gap-2">
+            <Link href="/auth/login" className="rounded bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700">
+              Login with Admin Account
+            </Link>
+            <Link href="/" className="rounded bg-black px-4 py-2 text-white text-sm">
+              Go Home
+            </Link>
+          </div>
         </div>
       </div>
     );

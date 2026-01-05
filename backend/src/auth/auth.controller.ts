@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { StartOtpDto } from './dto/start-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -12,12 +13,14 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('start')
+  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
   @ApiOperation({ summary: 'Start OTP flow (phone/email)' })
   @ApiResponse({ status: 201, description: 'OTP created and sent' })
   startOtp(@Body() dto: StartOtpDto) {
     return this.authService.start(dto);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes
   @Post('verify')
   @ApiOperation({ summary: 'Verify OTP and login/upsert user' })
   @ApiResponse({ status: 200, description: 'Returns access/refresh tokens' })

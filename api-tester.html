@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripAvail Booking API Tester</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; margin-bottom: 30px; }
+        .step { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .step h2 { color: #0066cc; margin-bottom: 15px; }
+        button { background: #0066cc; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0052a3; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; color: #333; }
+        input, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; }
+        textarea { min-height: 100px; }
+        .response { background: #f9f9f9; border-left: 4px solid #0066cc; padding: 15px; margin-top: 15px; border-radius: 4px; }
+        .response h3 { color: #0066cc; margin-bottom: 10px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .error { border-left-color: #dc3545; }
+        .error h3 { color: #dc3545; }
+        .success { border-left-color: #28a745; }
+        .success h3 { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 TripAvail Booking API Tester</h1>
+        
+        <!-- Step 1 -->
+        <div class="step">
+            <h2>Step 1: Create Quote</h2>
+            <button onclick="createQuote()">Send Quote Request</button>
+            <div id="quote-response"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step">
+            <h2>Step 2: Create Hold</h2>
+            <div class="input-group">
+                <label>Booking ID (from Step 1):</label>
+                <input type="text" id="bookingId" placeholder="Will be filled after Step 1">
+            </div>
+            <button onclick="createHold()">Send Hold Request</button>
+            <div id="hold-response"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step">
+            <h2>Step 3: Pre-authorize Payment</h2>
+            <button onclick="preAuthorizePayment()">Send Payment Pre-auth Request</button>
+            <div id="payment-response"></div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step">
+            <h2>Step 4: Confirm Booking</h2>
+            <button onclick="confirmBooking()">Send Confirm Request</button>
+            <div id="confirm-response"></div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'http://localhost:3100/v1';
+        const userId = 'cmjzqvtpx0004hf3h3rw48ycq';
+        const hotelPackageId = 'cmjzqvtsg0087hf3hkpsntf1q';
+
+        async function createQuote() {
+            try {
+                const response = await fetch(`${baseUrl}/bookings/quote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId,
+                        packageType: 'HOTEL',
+                        hotelPackageId,
+                        guestCount: 2,
+                        checkInDate: '2026-01-15',
+                        checkOutDate: '2026-01-17',
+                        addOns: []
+                    })
+                });
+                const data = await response.json();
+                const responseDiv = document.getElementById('quote-response');
+                if (response.ok) {
+                    document.getElementById('bookingId').value = data.id || data.bookingId;
+                    responseDiv.innerHTML = `<div class="response success"><h3>✅ Success</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    responseDiv.innerHTML = `<div class="response error"><h3>❌ Error</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                document.getElementById('quote-response').innerHTML = `<div class="response error"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        async function createHold() {
+            const bookingId = document.getElementById('bookingId').value;
+            if (!bookingId) {
+                alert('Please run Step 1 first to get a booking ID');
+                return;
+            }
+            try {
+                const response = await fetch(`${baseUrl}/bookings/hold`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Idempotency-Key': `hold-${Date.now()}`
+                    },
+                    body: JSON.stringify({ bookingId })
+                });
+                const data = await response.json();
+                const responseDiv = document.getElementById('hold-response');
+                if (response.ok) {
+                    responseDiv.innerHTML = `<div class="response success"><h3>✅ Success</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    responseDiv.innerHTML = `<div class="response error"><h3>❌ Error</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                document.getElementById('hold-response').innerHTML = `<div class="response error"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        async function preAuthorizePayment() {
+            const bookingId = document.getElementById('bookingId').value;
+            if (!bookingId) {
+                alert('Please run Step 1 first to get a booking ID');
+                return;
+            }
+            try {
+                const response = await fetch(`${baseUrl}/payments/pre-authorize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Idempotency-Key': `payment-${Date.now()}`
+                    },
+                    body: JSON.stringify({
+                        bookingId,
+                        paymentMethod: 'pm_card_visa'
+                    })
+                });
+                const data = await response.json();
+                const responseDiv = document.getElementById('payment-response');
+                if (response.ok) {
+                    responseDiv.innerHTML = `<div class="response success"><h3>✅ Success</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    responseDiv.innerHTML = `<div class="response error"><h3>❌ Error</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                document.getElementById('payment-response').innerHTML = `<div class="response error"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        async function confirmBooking() {
+            const bookingId = document.getElementById('bookingId').value;
+            if (!bookingId) {
+                alert('Please run Step 1 first to get a booking ID');
+                return;
+            }
+            try {
+                const response = await fetch(`${baseUrl}/bookings/${bookingId}/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Idempotency-Key': `confirm-${Date.now()}`
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                const responseDiv = document.getElementById('confirm-response');
+                if (response.ok) {
+                    responseDiv.innerHTML = `<div class="response success"><h3>✅ Success</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    responseDiv.innerHTML = `<div class="response error"><h3>❌ Error</h3><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                document.getElementById('confirm-response').innerHTML = `<div class="response error"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+            }
+        }
+    </script>
+</body>
+</html>
