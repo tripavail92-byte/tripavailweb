@@ -15,11 +15,23 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
     'http://localhost:3000',
     'http://localhost:3100',
+    'https://tripavailweb-web.vercel.app',
     'https://tripavailweb-web-2ojm.vercel.app',
-    'https://*.vercel.app',
   ];
+
+  // Dynamically add wildcard matching for vercel.app if needed
+  const corsOriginFunction = (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) => {
+    if (!origin || corsOrigins.includes(origin) || /https:\/\/.*\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  };
   app.enableCors({
-    origin: corsOrigins,
+    origin: corsOriginFunction,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'Idempotency-Key'],
@@ -67,7 +79,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 8001;
   const host = process.env.HOST || '0.0.0.0';
-  
+
   try {
     await app.listen(port, host);
     console.log(`✅ Application is running on: http://${host}:${port}`);
