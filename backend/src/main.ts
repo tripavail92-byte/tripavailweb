@@ -12,29 +12,59 @@ async function bootstrap() {
   app.use(helmet());
 
   // CORS configuration
-  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) || [
     'http://localhost:3000',
     'http://localhost:3100',
     'https://tripavailweb-web.vercel.app',
     'https://tripavailweb-web-2ojm.vercel.app',
   ];
 
-  // Dynamically add wildcard matching for vercel.app if needed
+  // Stricter regex patterns for dynamic origin matching
+  const isLocalhost = /^http:\/\/localhost(:\d+)?$/i;
+  const isVercelPreview = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
+
   const corsOriginFunction = (
     origin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void,
   ) => {
-    if (!origin || corsOrigins.includes(origin) || /https:\/\/.*\.vercel\.app$/.test(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Debug log (can be removed after testing in production)
+    if (process.env.DEBUG_CORS) {
+      console.log('[CORS Debug]', { origin, allowed: false });
     }
+
+    // Explicitly deny if no origin (non-browser requests; uncomment if strict mode needed)
+    // if (!origin) return callback(new Error('Origin required'));
+
+    // Allow no origin for health checks, internal requests
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check against explicit whitelist first (production domains)
+    if (corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow localhost for development
+    if (isLocalhost.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments with stricter regex
+    if (isVercelPreview.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Deny all other origins
+    callback(new Error('CORS: Origin not allowed'));
   };
+
   app.enableCors({
     origin: corsOriginFunction,
-    credentials: true,
+    credentials: true, // Required for Bearer tokens + any cookies
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'Idempotency-Key'],
+    exposedHeaders: ['X-Request-ID'],
     maxAge: 3600,
   });
 
