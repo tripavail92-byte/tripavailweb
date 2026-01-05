@@ -29,7 +29,7 @@ interface Booking {
 export default function BookingQuotePage() {
   const params = useParams();
   const router = useRouter();
-  const { token } = useAuthContext();
+  const { user } = useAuthContext();
   const bookingId = params?.id as string;
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -39,12 +39,12 @@ export default function BookingQuotePage() {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
 
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       router.push('/auth/login');
       return;
     }
     fetchBooking();
-  }, [token, bookingId]);
+  }, [user, bookingId]);
 
   useEffect(() => {
     if (!booking?.expiresAt) return;
@@ -73,13 +73,13 @@ export default function BookingQuotePage() {
       setError(null);
 
       const headers = {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         'Content-Type': 'application/json',
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/bookings/${bookingId}`,
-        { headers }
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/bookings/${bookingId}`,
+        { headers },
       );
 
       if (!response.ok) throw new Error('Failed to fetch booking details');
@@ -98,17 +98,17 @@ export default function BookingQuotePage() {
     try {
       setHoldLoading(true);
       const headers = {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         'Content-Type': 'application/json',
         'Idempotency-Key': `${booking.id}-hold`,
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/bookings/${booking.id}/hold`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/bookings/${booking.id}/hold`,
         {
           method: 'POST',
           headers,
-        }
+        },
       );
 
       if (!response.ok) throw new Error('Failed to hold booking');
@@ -167,7 +167,10 @@ export default function BookingQuotePage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/traveler/discovery" className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
+          <Link
+            href="/traveler/discovery"
+            className="text-blue-600 hover:text-blue-700 mb-4 inline-block"
+          >
             ← Back to Discovery
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Price Quote</h1>
@@ -181,13 +184,15 @@ export default function BookingQuotePage() {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Booking Details</h2>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  booking.status === 'QUOTE'
-                    ? 'bg-blue-100 text-blue-800'
-                    : booking.status === 'HOLD'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-green-100 text-green-800'
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    booking.status === 'QUOTE'
+                      ? 'bg-blue-100 text-blue-800'
+                      : booking.status === 'HOLD'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-green-100 text-green-800'
+                  }`}
+                >
                   {booking.status}
                 </span>
               </div>
@@ -239,39 +244,50 @@ export default function BookingQuotePage() {
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-700">Base Price</span>
-                  <span className="font-semibold text-gray-900">${priceDetails.basePrice.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">
+                    ${priceDetails.basePrice.toFixed(2)}
+                  </span>
                 </div>
                 {priceDetails.taxes > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">Taxes</span>
-                    <span className="font-semibold text-gray-900">${priceDetails.taxes.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900">
+                      ${priceDetails.taxes.toFixed(2)}
+                    </span>
                   </div>
                 )}
                 {priceDetails.fees > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">Service Fees</span>
-                    <span className="font-semibold text-gray-900">${priceDetails.fees.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900">
+                      ${priceDetails.fees.toFixed(2)}
+                    </span>
                   </div>
                 )}
 
-                {priceDetails.breakdown && Object.entries(priceDetails.breakdown).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">{key}</span>
-                    <span className="text-gray-900">${(value as number).toFixed(2)}</span>
-                  </div>
-                ))}
+                {priceDetails.breakdown &&
+                  Object.entries(priceDetails.breakdown).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">{key}</span>
+                      <span className="text-gray-900">${(value as number).toFixed(2)}</span>
+                    </div>
+                  ))}
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-bold text-blue-600">${priceDetails.total.toFixed(2)}</span>
+                <span className="text-3xl font-bold text-blue-600">
+                  ${priceDetails.total.toFixed(2)}
+                </span>
               </div>
             </div>
 
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-900">
-                ℹ️ <strong>Price Locked:</strong> This price is locked in and guaranteed. Once you hold this reservation, you have {timeRemaining || '15 minutes'} to complete your booking.
+                ℹ️ <strong>Price Locked:</strong> This price is locked in and guaranteed. Once you
+                hold this reservation, you have {timeRemaining || '15 minutes'} to complete your
+                booking.
               </p>
             </div>
           </div>
@@ -323,7 +339,8 @@ export default function BookingQuotePage() {
               {/* Info */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <p className="text-xs text-gray-600">
-                  <strong>Security:</strong> Your payment information is encrypted and secure. We use industry-standard protocols to protect your data.
+                  <strong>Security:</strong> Your payment information is encrypted and secure. We
+                  use industry-standard protocols to protect your data.
                 </p>
               </div>
             </div>

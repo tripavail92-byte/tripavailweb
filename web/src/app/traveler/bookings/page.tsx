@@ -29,19 +29,19 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 
 export default function TravelerBookingsPage() {
   const router = useRouter();
-  const { token } = useAuthContext();
+  const { user } = useAuthContext();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       router.push('/auth/login');
       return;
     }
     fetchBookings();
-  }, [token, statusFilter]);
+  }, [user, statusFilter]);
 
   const fetchBookings = async () => {
     try {
@@ -49,14 +49,14 @@ export default function TravelerBookingsPage() {
       setError(null);
 
       const headers = {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         'Content-Type': 'application/json',
       };
 
       const url =
         statusFilter === 'all'
-          ? `${process.env.NEXT_PUBLIC_API_URL}/v1/bookings`
-          : `${process.env.NEXT_PUBLIC_API_URL}/v1/bookings?status=${statusFilter}`;
+          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/bookings`
+          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/bookings?status=${statusFilter}`;
 
       const response = await fetch(url, { headers });
       if (!response.ok) throw new Error('Failed to fetch bookings');
@@ -176,7 +176,8 @@ export default function TravelerBookingsPage() {
                               {booking.packageName || `${booking.packageType} Package`}
                             </h3>
                             <p className="text-sm text-gray-600 mb-3">
-                              Booking ID: <span className="font-mono text-gray-900">{booking.id}</span>
+                              Booking ID:{' '}
+                              <span className="font-mono text-gray-900">{booking.id}</span>
                             </p>
 
                             {/* Details Grid */}
@@ -199,7 +200,9 @@ export default function TravelerBookingsPage() {
                               )}
                               <div>
                                 <p className="text-gray-600">Guests</p>
-                                <p className="font-semibold text-gray-900">{booking.numberOfGuests}</p>
+                                <p className="font-semibold text-gray-900">
+                                  {booking.numberOfGuests}
+                                </p>
                               </div>
                               <div>
                                 <p className="text-gray-600">Created</p>

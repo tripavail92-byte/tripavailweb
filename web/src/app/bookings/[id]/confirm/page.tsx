@@ -28,7 +28,7 @@ interface Booking {
 export default function BookingConfirmPage() {
   const params = useParams();
   const router = useRouter();
-  const { token } = useAuthContext();
+  const { user } = useAuthContext();
   const bookingId = params?.id as string;
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -44,26 +44,26 @@ export default function BookingConfirmPage() {
   });
 
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       router.push('/auth/login');
       return;
     }
     fetchBooking();
-  }, [token, bookingId]);
+  }, [user, bookingId]);
 
   const fetchBooking = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/bookings/${bookingId}`,
-        { headers }
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/bookings/${bookingId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json',
+          },
+        },
       );
 
       if (!response.ok) throw new Error('Failed to fetch booking details');
@@ -82,13 +82,13 @@ export default function BookingConfirmPage() {
     try {
       setConfirmLoading(true);
       const headers = {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         'Content-Type': 'application/json',
         'Idempotency-Key': `${booking.id}-confirm`,
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/bookings/${booking.id}/confirm`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/bookings/${booking.id}/confirm`,
         {
           method: 'POST',
           headers,
@@ -96,7 +96,7 @@ export default function BookingConfirmPage() {
             paymentMethod,
             ...(paymentMethod === 'card' && { cardDetails }),
           }),
-        }
+        },
       );
 
       if (!response.ok) throw new Error('Failed to confirm booking');
@@ -155,11 +155,16 @@ export default function BookingConfirmPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/bookings/${booking.id}`} className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
+          <Link
+            href={`/bookings/${booking.id}`}
+            className="text-blue-600 hover:text-blue-700 mb-4 inline-block"
+          >
             ← Back
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Complete Your Booking</h1>
-          <p className="text-gray-600 mt-2">Enter your payment details to confirm your reservation</p>
+          <p className="text-gray-600 mt-2">
+            Enter your payment details to confirm your reservation
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -168,10 +173,12 @@ export default function BookingConfirmPage() {
             {/* Payment Method Selection */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
-              
+
               <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition"
-                  style={{ borderColor: paymentMethod === 'card' ? '#2563eb' : undefined }}>
+                <label
+                  className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition"
+                  style={{ borderColor: paymentMethod === 'card' ? '#2563eb' : undefined }}
+                >
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -183,8 +190,10 @@ export default function BookingConfirmPage() {
                   <span className="ml-3 font-medium text-gray-900">Credit/Debit Card</span>
                 </label>
 
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition"
-                  style={{ borderColor: paymentMethod === 'wallet' ? '#2563eb' : undefined }}>
+                <label
+                  className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition"
+                  style={{ borderColor: paymentMethod === 'wallet' ? '#2563eb' : undefined }}
+                >
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -196,8 +205,10 @@ export default function BookingConfirmPage() {
                   <span className="ml-3 font-medium text-gray-900">Digital Wallet</span>
                 </label>
 
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition"
-                  style={{ borderColor: paymentMethod === 'bank' ? '#2563eb' : undefined }}>
+                <label
+                  className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition"
+                  style={{ borderColor: paymentMethod === 'bank' ? '#2563eb' : undefined }}
+                >
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -215,7 +226,7 @@ export default function BookingConfirmPage() {
             {paymentMethod === 'card' && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Card Details</h2>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -224,7 +235,9 @@ export default function BookingConfirmPage() {
                     <input
                       type="text"
                       value={cardDetails.nameOnCard}
-                      onChange={(e) => setCardDetails({ ...cardDetails, nameOnCard: e.target.value })}
+                      onChange={(e) =>
+                        setCardDetails({ ...cardDetails, nameOnCard: e.target.value })
+                      }
                       placeholder="John Doe"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -237,7 +250,9 @@ export default function BookingConfirmPage() {
                     <input
                       type="text"
                       value={cardDetails.cardNumber}
-                      onChange={(e) => setCardDetails({ ...cardDetails, cardNumber: e.target.value })}
+                      onChange={(e) =>
+                        setCardDetails({ ...cardDetails, cardNumber: e.target.value })
+                      }
                       placeholder="4532 1234 5678 9010"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -251,15 +266,15 @@ export default function BookingConfirmPage() {
                       <input
                         type="text"
                         value={cardDetails.expiryDate}
-                        onChange={(e) => setCardDetails({ ...cardDetails, expiryDate: e.target.value })}
+                        onChange={(e) =>
+                          setCardDetails({ ...cardDetails, expiryDate: e.target.value })
+                        }
                         placeholder="MM/YY"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        CVV
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">CVV</label>
                       <input
                         type="text"
                         value={cardDetails.cvv}
@@ -276,14 +291,18 @@ export default function BookingConfirmPage() {
             {paymentMethod === 'wallet' && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Select Wallet</h2>
-                <p className="text-gray-600 mb-4">Wallet payment coming soon. Please use another method.</p>
+                <p className="text-gray-600 mb-4">
+                  Wallet payment coming soon. Please use another method.
+                </p>
               </div>
             )}
 
             {paymentMethod === 'bank' && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Bank Transfer</h2>
-                <p className="text-gray-600 mb-4">Bank transfer details will be provided after confirmation.</p>
+                <p className="text-gray-600 mb-4">
+                  Bank transfer details will be provided after confirmation.
+                </p>
               </div>
             )}
 
@@ -292,7 +311,8 @@ export default function BookingConfirmPage() {
               <label className="flex items-start gap-3 cursor-pointer">
                 <input type="checkbox" defaultChecked className="mt-1 w-4 h-4" />
                 <span className="text-sm text-blue-900">
-                  I agree to the booking terms and conditions, cancellation policy, and privacy policy
+                  I agree to the booking terms and conditions, cancellation policy, and privacy
+                  policy
                 </span>
               </label>
             </div>
@@ -312,7 +332,10 @@ export default function BookingConfirmPage() {
                   <div>
                     <p className="text-sm text-gray-600">Dates</p>
                     <p className="font-semibold text-gray-900">
-                      {new Date(booking.checkInDate).toLocaleDateString()} - {booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString() : 'N/A'}
+                      {new Date(booking.checkInDate).toLocaleDateString()} -{' '}
+                      {booking.checkOutDate
+                        ? new Date(booking.checkOutDate).toLocaleDateString()
+                        : 'N/A'}
                     </p>
                   </div>
                 )}
@@ -344,7 +367,9 @@ export default function BookingConfirmPage() {
               <div className="mb-6">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-blue-600">${priceDetails.total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    ${priceDetails.total.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
