@@ -56,7 +56,7 @@ export class HotelPackagesService {
   list(query: ListHotelPackagesQueryDto) {
     const take = query.pageSize ?? 20;
     const skip = ((query.page ?? 1) - 1) * take;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const statusFilter =
         query.status !== undefined
           ? query.status
@@ -144,7 +144,7 @@ export class HotelPackagesService {
           : undefined,
       },
       include: { amenities: { include: { amenity: true } } },
-    }).then((pkg) => this.transformPackageResponse(pkg));
+    }).then((pkg: any) => this.transformPackageResponse(pkg));
   }
 
   private async getOwnedPackageOrThrow(providerId: string, packageId: string) {
@@ -246,7 +246,7 @@ export class HotelPackagesService {
       return this.transformPackageResponse(updated);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.hotelPackage.update({
         where: { id: packageId },
         data: updateData,

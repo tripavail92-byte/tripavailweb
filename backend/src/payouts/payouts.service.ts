@@ -67,12 +67,12 @@ export class PayoutsService {
 
     // Calculate totals
     const totalEarnings = earningsEntries.reduce(
-      (sum, entry) => sum.plus(entry.amount),
+      (sum: Decimal, entry: any) => sum.plus(entry.amount),
       new Decimal(0),
     );
 
     const refundsDeducted = refundEntries.reduce(
-      (sum, entry) => sum.plus(entry.amount),
+      (sum: Decimal, entry: any) => sum.plus(entry.amount),
       new Decimal(0),
     );
 
@@ -114,9 +114,9 @@ export class PayoutsService {
 
     // Extract provider IDs from "provider:xxx" format
     return entries
-      .map((e) => e.creditAccount)
-      .filter((account) => account.startsWith('provider:'))
-      .map((account) => account.replace('provider:', ''));
+      .map((e: any) => e.creditAccount)
+      .filter((account: string) => account.startsWith('provider:'))
+      .map((account: string) => account.replace('provider:', ''));
   }
 
   /**
@@ -454,14 +454,14 @@ export class PayoutsService {
       where: { providerId },
     });
 
-    const totalEarnings = statements.reduce<Decimal>(
+    const totalEarnings = statements.reduce(
       (sum: Decimal, s: PayoutStatement) => sum.plus(s.earnings),
       new Decimal(0),
     );
 
     const totalPaidOut = statements
       .filter((s: PayoutStatement) => s.status === PayoutStatus.COMPLETED)
-      .reduce<Decimal>((sum: Decimal, s: PayoutStatement) => sum.plus(s.netAmount), new Decimal(0));
+      .reduce((sum: Decimal, s: PayoutStatement) => sum.plus(s.netAmount), new Decimal(0));
 
     const pendingPayout = statements
       .filter(
@@ -470,7 +470,7 @@ export class PayoutsService {
           s.status === PayoutStatus.SCHEDULED ||
           s.status === PayoutStatus.IN_PROGRESS,
       )
-      .reduce<Decimal>((sum: Decimal, s: PayoutStatement) => sum.plus(s.netAmount), new Decimal(0));
+      .reduce((sum: Decimal, s: PayoutStatement) => sum.plus(s.netAmount), new Decimal(0));
 
     const completedStatements = statements.filter(
       (s: PayoutStatement) => s.status === PayoutStatus.COMPLETED,

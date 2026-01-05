@@ -1,5 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+
+// Use dynamic require so builds do not fail if Prisma types are not generated yet
+// and to avoid TS type errors when the client is missing at build time.
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+const { PrismaClient } = require('@prisma/client') as { PrismaClient: new () => any };
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -7,6 +11,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     if (process.env.SKIP_DB === '1') {
       return;
     }
-    await this.$connect();
+    if (typeof (this as any).$connect === 'function') {
+      await (this as any).$connect();
+    }
   }
 }

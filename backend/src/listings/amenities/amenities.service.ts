@@ -12,7 +12,7 @@ export class AmenitiesService {
   list(query: ListAmenitiesQueryDto) {
     const take = query.pageSize ?? 20;
     const skip = ((query.page ?? 1) - 1) * take;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const where: Prisma.AmenityWhereInput = {
         category: query.category,
         name: query.search ? { contains: query.search, mode: 'insensitive' as const } : undefined,

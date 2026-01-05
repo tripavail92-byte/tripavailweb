@@ -131,11 +131,11 @@ export class AdminController {
     // Check if all provider documents are approved
     const allDocuments = await this.kycService.getProviderDocuments(document.providerId);
     const requiredDocTypes = this.getRequiredDocuments(document.provider.providerType);
-    const approvedDocs = allDocuments.filter((doc) => doc.status === 'APPROVED');
+    const approvedDocs = allDocuments.filter((doc: any) => doc.status === 'APPROVED');
 
     const allDocsApproved =
       approvedDocs.length === requiredDocTypes.length &&
-      requiredDocTypes.every((type) => approvedDocs.some((doc) => doc.documentType === type));
+      requiredDocTypes.every((type) => approvedDocs.some((doc: any) => doc.documentType === type));
 
     // Update provider verification status if all docs approved
     if (allDocsApproved && document.provider.verificationStatus !== 'APPROVED') {
@@ -390,7 +390,7 @@ export class AdminController {
 
     // Count packages for each provider manually
     const providersWithCounts = await Promise.all(
-      providers.map(async (p) => {
+      providers.map(async (p: any) => {
         const [hotelCount, tourCount] = await Promise.all([
           this.prisma.hotelPackage.count({ where: { providerId: p.id } }),
           this.prisma.tourPackage.count({ where: { providerId: p.id } }),

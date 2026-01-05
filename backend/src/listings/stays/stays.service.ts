@@ -11,7 +11,7 @@ export class StaysService {
   list(query: ListStaysQueryDto) {
     const take = query.pageSize ?? 20;
     const skip = ((query.page ?? 1) - 1) * take;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const statusFilter =
         query.status !== undefined
           ? query.status

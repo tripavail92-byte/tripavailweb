@@ -1,0 +1,22 @@
+{
+  "ownerId": "tea-d5dui6uuk2gs7398e1ig",
+  "name": "tripavail-backend",
+  "type": "web_service",
+  "plan": "free",
+  "runtime": "node",
+  "repo": "https://github.com/tripavail92-byte/tripavailweb.git",
+  "branch": "main",
+  "serviceDetails": {
+    "envSpecificDetails": {
+      "nodeEnvSpecificDetails": {
+        "buildCommand": "npm ci && npm run build",
+        "startCommand": "npm run start:prod"
+      }
+    },
+    "rootDir": "backend"
+  },
+  "envVars": [
+    { "key": "NODE_ENV", "value": "production" },
+    { "key": "PORT", "value": "4100" }
+  ]
+}

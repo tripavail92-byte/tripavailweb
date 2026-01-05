@@ -1,0 +1,22 @@
+{
+  "ownerId": "tea-d5dui6uuk2gs7398e1ig",
+  "name": "tripavail-web",
+  "type": "web_service",
+  "plan": "free",
+  "runtime": "node",
+  "repo": "https://github.com/tripavail92-byte/tripavailweb.git",
+  "branch": "main",
+  "serviceDetails": {
+    "envSpecificDetails": {
+      "nodeEnvSpecificDetails": {
+        "buildCommand": "npm ci && npm run build",
+        "startCommand": "npm start"
+      }
+    },
+    "rootDir": "web"
+  },
+  "envVars": [
+    { "key": "NODE_ENV", "value": "production" },
+    { "key": "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "value": "AIzaSyCTtD2Sl83BYbyDvc_0MU29UxaGc8gQmmQ" }
+  ]
+}

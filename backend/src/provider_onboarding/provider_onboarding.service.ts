@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import {
   HotelStep2BasicsDto,
@@ -173,7 +174,7 @@ export class ProviderOnboardingService {
       },
     });
 
-    return profiles.map((profile) => {
+    return profiles.map((profile: any) => {
       const completedSteps =
         profile.onboarding && Array.isArray(profile.onboarding.completedSteps)
           ? (profile.onboarding.completedSteps as number[])
@@ -368,7 +369,7 @@ export class ProviderOnboardingService {
     }
 
     // Create Listing with transaction
-    const listing = await this.prisma.$transaction(async (tx) => {
+    const listing = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create Listing
       const newListing = await tx.listing.create({
         data: {

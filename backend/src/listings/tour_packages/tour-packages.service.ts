@@ -179,7 +179,7 @@ export class TourPackagesService {
   list(query: ListTourPackagesQueryDto) {
     const take = query.pageSize ?? 20;
     const skip = ((query.page ?? 1) - 1) * take;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const statusFilter =
         query.status !== undefined
           ? query.status
@@ -260,7 +260,7 @@ export class TourPackagesService {
 
   async step3Departures(providerId: string, packageId: string, dto: Step3DeparturesDto) {
     await this.getDraftOwnedPackage(providerId, packageId);
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.tourDeparture.deleteMany({ where: { packageId } });
       await tx.tourDeparture.createMany({
         data: dto.departureDates.map((date) => ({
@@ -276,7 +276,7 @@ export class TourPackagesService {
 
   async step4Pickups(providerId: string, packageId: string, dto: Step4PickupsDto) {
     await this.getDraftOwnedPackage(providerId, packageId);
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.pickup.deleteMany({ where: { packageId } });
       await tx.pickup.createMany({
         data: dto.pickups.map((p) => ({
@@ -302,7 +302,7 @@ export class TourPackagesService {
 
   async step6Itinerary(providerId: string, packageId: string, dto: Step6ItineraryDto) {
     await this.getDraftOwnedPackage(providerId, packageId);
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.itineraryDay.deleteMany({ where: { packageId } });
       await tx.itineraryDay.createMany({
         data: dto.days.map((d) => ({
@@ -341,7 +341,7 @@ export class TourPackagesService {
     }
 
     // Clear existing amenities and add new ones
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.tourPackageAmenity.deleteMany({ where: { packageId } });
       await tx.tourPackageAmenity.createMany({
         data: dto.amenityIds.map((amenityId) => ({

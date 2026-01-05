@@ -185,15 +185,15 @@ export class KycService {
         : ['business_license', 'owner_id', 'tax_certificate', 'tour_license'];
 
     const uploadedDocs = documents
-      .filter((doc) => doc.status === 'UPLOADED' || doc.status === 'APPROVED')
-      .map((doc) => doc.documentType);
+      .filter((doc: any) => doc.status === 'UPLOADED' || doc.status === 'APPROVED')
+      .map((doc: any) => doc.documentType);
 
     const missingDocs = requiredDocs.filter((type) => !uploadedDocs.includes(type));
 
     const allDocsUploaded = missingDocs.length === 0;
     const allDocsApproved = documents
-      .filter((doc) => requiredDocs.includes(doc.documentType))
-      .every((doc) => doc.status === 'APPROVED');
+      .filter((doc: any) => requiredDocs.includes(doc.documentType))
+      .every((doc: any) => doc.status === 'APPROVED');
 
     return {
       providerId,
@@ -203,7 +203,7 @@ export class KycService {
       missingDocuments: missingDocs,
       allDocsUploaded,
       allDocsApproved,
-      documents: documents.map((doc) => ({
+      documents: documents.map((doc: any) => ({
         id: doc.id,
         documentType: doc.documentType,
         fileName: doc.fileName,

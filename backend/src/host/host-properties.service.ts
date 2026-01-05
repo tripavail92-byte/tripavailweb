@@ -55,7 +55,7 @@ export class HostPropertiesService {
         updatedAt: listing.updatedAt,
       },
       rooms: listing.rooms,
-      amenities: listing.amenities.map((a) => a.amenity),
+      amenities: listing.amenities.map((a: any) => a.amenity),
       policies,
       media,
       onboarding: onboarding

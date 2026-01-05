@@ -176,7 +176,7 @@ export class BookingsService {
     const holdExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     try {
-      await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx: any) => {
         if (quote.hotelPackageId) {
           // Lock hotel inventory nights
           if (!quote.checkInDate || !quote.checkOutDate) {
