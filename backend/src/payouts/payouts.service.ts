@@ -1,7 +1,12 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PayoutBatch, PayoutStatement, PayoutStatus, PayoutScheduleFrequency } from '@prisma/client';
+import {
+  PayoutBatch,
+  PayoutStatement,
+  PayoutStatus,
+  PayoutScheduleFrequency,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export interface ProviderEarnings {
@@ -72,7 +77,7 @@ export class PayoutsService {
     );
 
     // Platform fee is 10% of gross earnings (configurable)
-    const platformFeeRate = new Decimal(0.10); // 10%
+    const platformFeeRate = new Decimal(0.1); // 10%
     const platformFees = totalEarnings.mul(platformFeeRate);
 
     // Net amount = earnings - fees - refunds
@@ -92,10 +97,7 @@ export class PayoutsService {
   /**
    * Get all providers who have earnings in the time period
    */
-  async getProvidersWithEarnings(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<string[]> {
+  async getProvidersWithEarnings(startDate: Date, endDate: Date): Promise<string[]> {
     const entries = await this.prisma.ledgerEntry.findMany({
       where: {
         type: 'BOOKING_CONFIRMED',
@@ -146,21 +148,14 @@ export class PayoutsService {
     // Calculate earnings for each provider
     const earningsList: ProviderEarnings[] = [];
     for (const providerId of providerIds) {
-      const earnings = await this.calculateProviderEarnings(
-        providerId,
-        startDate,
-        endDate,
-      );
+      const earnings = await this.calculateProviderEarnings(providerId, startDate, endDate);
       if (earnings.netAmount.greaterThan(0)) {
         earningsList.push(earnings);
       }
     }
 
     // Calculate batch totals
-    const totalAmount = earningsList.reduce(
-      (sum, e) => sum.plus(e.netAmount),
-      new Decimal(0),
-    );
+    const totalAmount = earningsList.reduce((sum, e) => sum.plus(e.netAmount), new Decimal(0));
 
     // Create payout batch
     const batch = await this.prisma.payoutBatch.create({
@@ -188,19 +183,21 @@ export class PayoutsService {
           refundsDeducted: earnings.refundsDeducted,
           netAmount: earnings.netAmount,
           status: PayoutStatus.PENDING,
-          statementJson: JSON.parse(JSON.stringify({
-            period: {
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString(),
-            },
-            bookingCount: earnings.bookingCount,
-            grossEarnings: earnings.totalEarnings.toString(),
-            deductions: {
-              platformFee: earnings.platformFees.toString(),
-              refunds: earnings.refundsDeducted.toString(),
-            },
-            netPayout: earnings.netAmount.toString(),
-          })),
+          statementJson: JSON.parse(
+            JSON.stringify({
+              period: {
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+              },
+              bookingCount: earnings.bookingCount,
+              grossEarnings: earnings.totalEarnings.toString(),
+              deductions: {
+                platformFee: earnings.platformFees.toString(),
+                refunds: earnings.refundsDeducted.toString(),
+              },
+              netPayout: earnings.netAmount.toString(),
+            }),
+          ),
         },
       });
     }
@@ -226,9 +223,7 @@ export class PayoutsService {
     }
 
     if (batch.status !== PayoutStatus.PENDING) {
-      throw new BadRequestException(
-        `Batch is in ${batch.status} state, cannot approve`,
-      );
+      throw new BadRequestException(`Batch is in ${batch.status} state, cannot approve`);
     }
 
     const updated = await this.prisma.payoutBatch.update({
@@ -305,9 +300,7 @@ export class PayoutsService {
       },
     });
 
-    this.logger.log(
-      `Payout batch ${batchId} processed: ${batch.statements.length} transfers`,
-    );
+    this.logger.log(`Payout batch ${batchId} processed: ${batch.statements.length} transfers`);
 
     return completed;
   }
@@ -461,26 +454,26 @@ export class PayoutsService {
       where: { providerId },
     });
 
-    const totalEarnings = statements.reduce(
-      (sum, s) => sum.plus(s.earnings),
+    const totalEarnings = statements.reduce<Decimal>(
+      (sum: Decimal, s: PayoutStatement) => sum.plus(s.earnings),
       new Decimal(0),
     );
 
     const totalPaidOut = statements
-      .filter((s) => s.status === PayoutStatus.COMPLETED)
-      .reduce((sum, s) => sum.plus(s.netAmount), new Decimal(0));
+      .filter((s: PayoutStatement) => s.status === PayoutStatus.COMPLETED)
+      .reduce<Decimal>((sum: Decimal, s: PayoutStatement) => sum.plus(s.netAmount), new Decimal(0));
 
     const pendingPayout = statements
       .filter(
-        (s) =>
+        (s: PayoutStatement) =>
           s.status === PayoutStatus.PENDING ||
           s.status === PayoutStatus.SCHEDULED ||
           s.status === PayoutStatus.IN_PROGRESS,
       )
-      .reduce((sum, s) => sum.plus(s.netAmount), new Decimal(0));
+      .reduce<Decimal>((sum: Decimal, s: PayoutStatement) => sum.plus(s.netAmount), new Decimal(0));
 
     const completedStatements = statements.filter(
-      (s) => s.status === PayoutStatus.COMPLETED,
+      (s: PayoutStatement) => s.status === PayoutStatus.COMPLETED,
     );
     const lastPayoutDate =
       completedStatements.length > 0

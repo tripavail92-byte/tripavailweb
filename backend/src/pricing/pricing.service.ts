@@ -51,11 +51,10 @@ export class PricingService {
     throw new BadRequestException('Invalid package type');
   }
 
-  private async calculateHotelPackagePrice(
-    input: PriceCalculationInput,
-  ): Promise<PriceBreakdown> {
+  private async calculateHotelPackagePrice(input: PriceCalculationInput): Promise<PriceBreakdown> {
+    const prisma = this.prisma as any;
     // Fetch hotel package with cancellation policy and pricing
-    const hotelPackage = await this.prisma.hotelPackage.findUnique({
+    const hotelPackage = await prisma.hotelPackage.findUnique({
       where: { id: input.packageId },
       select: {
         id: true,
@@ -88,11 +87,11 @@ export class PricingService {
     const subtotal = pricePerNight * nights * numberOfRooms;
 
     // Tax calculation (10%)
-    const taxRate = 0.10;
+    const taxRate = 0.1;
     const taxAmount = subtotal * taxRate;
 
     // Commission (10% of subtotal)
-    const commissionRate = 0.10;
+    const commissionRate = 0.1;
     const commissionAmount = subtotal * commissionRate;
 
     // Grand total
@@ -116,11 +115,10 @@ export class PricingService {
     };
   }
 
-  private async calculateTourPackagePrice(
-    input: PriceCalculationInput,
-  ): Promise<PriceBreakdown> {
+  private async calculateTourPackagePrice(input: PriceCalculationInput): Promise<PriceBreakdown> {
+    const prisma = this.prisma as any;
     // Fetch tour package with departure and cancellation policy and pricing
-    const tourPackage = await this.prisma.tourPackage.findUnique({
+    const tourPackage = await prisma.tourPackage.findUnique({
       where: { id: input.packageId },
       select: {
         id: true,
@@ -164,7 +162,7 @@ export class PricingService {
     // Add-ons calculation
     const addOnsBreakdown: Array<{ addOnId: string; addOnName: string; price: number }> = [];
     if (input.selectedAddOns && input.selectedAddOns.length > 0) {
-      const selectedAddOns = tourPackage.addOns.filter((addOn) =>
+      const selectedAddOns = tourPackage.addOns.filter((addOn: { id: string }) =>
         input.selectedAddOns!.includes(addOn.id),
       );
 
@@ -180,11 +178,11 @@ export class PricingService {
     }
 
     // Tax calculation (10%)
-    const taxRate = 0.10;
+    const taxRate = 0.1;
     const taxAmount = subtotal * taxRate;
 
     // Commission (10% of subtotal)
-    const commissionRate = 0.10;
+    const commissionRate = 0.1;
     const commissionAmount = subtotal * commissionRate;
 
     // Grand total
@@ -209,4 +207,3 @@ export class PricingService {
     };
   }
 }
-
