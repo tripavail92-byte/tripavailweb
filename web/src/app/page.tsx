@@ -7,14 +7,14 @@ import Link from 'next/link';
 
 export default function TravelerHome() {
   const router = useRouter();
-  const { token, user } = useAuthContext();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     // Redirect to discovery if already authenticated as traveler
-    if (token && user?.role === 'TRAVELER') {
+    if (user?.role === 'TRAVELER') {
       router.push('/traveler/discovery');
     }
-  }, [token, user, router]);
+  }, [user, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800">
@@ -27,7 +27,7 @@ export default function TravelerHome() {
           <p className="text-xl text-blue-100 mb-8">
             Book amazing hotels, tours, and stays all in one place
           </p>
-          {!token ? (
+          {!user ? (
             <div className="flex gap-4 justify-center">
               <Link
                 href="/auth/login"
@@ -71,9 +71,7 @@ export default function TravelerHome() {
           <div className="bg-white rounded-lg p-8 shadow-lg">
             <div className="text-4xl mb-4">🏡</div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Stays</h3>
-            <p className="text-gray-600">
-              Unique accommodations for every budget and travel style
-            </p>
+            <p className="text-gray-600">Unique accommodations for every budget and travel style</p>
           </div>
         </div>
 
@@ -101,52 +99,5 @@ export default function TravelerHome() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Card({ title, items, empty, type }: { title: string; items: ListingSummary[] | any; empty: string; type: 'hotel' | 'tour' | 'stay' }) {
-  const router = useRouter();
-  // Defensive: ensure items is always an array
-  const itemsArray = Array.isArray(items) ? items : [];
-  
-  const handleItemClick = (itemId: string) => {
-    // Navigate to the listing details page
-    // Format: /listings/[type]/[id]
-    router.push(`/listings/${type}/${itemId}`);
-  };
-  
-  return (
-    <div className="rounded-xl border bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      {itemsArray.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-600">{empty}</p>
-      ) : (
-        <ul className="mt-3 space-y-2 text-sm">
-          {itemsArray.slice(0, 5).map((item) => (
-            <li 
-              key={item.id} 
-              onClick={() => handleItemClick(item.id)}
-              className="cursor-pointer rounded border border-neutral-200 p-2 transition-colors hover:border-blue-400 hover:bg-blue-50"
-            >
-              <div className="font-medium text-neutral-800">{item.name || item.title || 'Untitled'}</div>
-              {item.description && <p className="text-neutral-600">{item.description}</p>}
-              {item.status && <p className="text-xs text-neutral-500">Status: {item.status}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function QuickLink({ label, subtext, onClick }: { label: string; subtext: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-xl bg-white/90 px-4 py-3 text-left text-sm text-neutral-800 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <div className="font-semibold">{label}</div>
-      <div className="text-xs text-neutral-500">{subtext}</div>
-    </button>
   );
 }
