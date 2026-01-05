@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "build:nest": "nest build",
+    "build:render": "tsc && prisma migrate deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",
