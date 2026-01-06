@@ -106,7 +106,7 @@ export default function HostDashboardPage() {
     <div className="space-y-6">
       {hotelProfile && <PartnerStatusBanner profile={hotelProfile} />}
 
-      {statusError && (
+      {statusError != null && (
         <ErrorToast 
           error={statusError} 
           message={formatApiError(statusError)}
