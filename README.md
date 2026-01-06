@@ -45,7 +45,7 @@ In CI (or locally), set the env vars, then seed and run tests:
 
 ```bash
 cd backend
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5434/tripavail"
+export DATABASE_URL="postgresql://USER:PASSWORD@RENDER_HOST:5432/DBNAME?sslmode=require"
 export REDIS_URL="redis://localhost:6380"
 export MEILISEARCH_HOST="http://localhost:7700"
 pnpm seed && pnpm test
@@ -66,10 +66,19 @@ The endpoint `GET /v1/host/properties/:id/snapshot` is intended for **UI prefill
 
 ## Documentation
 
+### Development Guides
 - [Week 1 Plan](WEEK_1.md)
 - [Master Checklist](MASTER_CHECKLIST.md)
 - [Engineering Decisions](ENGINEERING_DECISIONS.md)
 - [Production Roadmap](PRODUCTION_ROADMAP.md)
+
+### Deployment Guides
+- **[Deploy Index](DEPLOY_INDEX.md)** — Command center for all deployment docs
+- [Deploy Now](DEPLOY_NOW.md) — Step-by-step deployment instructions
+- [Deploy Package](DEPLOY_PACKAGE.md) — Deployment overview & quick start
+- [Pre-Deploy Sanity Checks](PRE_DEPLOY_SANITY_CHECKS.md) — Verification checklist
+- [Deployment Sign-Off](DEPLOYMENT_SIGN_OFF.md) — Complete technical verification
+- [Staging Setup](STAGING_SETUP.md) — Airbnb-level safety net (CI gate)
 
 ## Project Structure
 

@@ -3,10 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { listHotelPackages, HotelPackage } from '@/lib/api-client';
+import { listHotelPackages, HotelPackage, submitProviderOnboarding } from '@/lib/api-client';
+import { PartnerStatusBanner } from '@/app/components/PartnerStatusBanner';
+import { formatApiError } from '@/lib/error-utils';
+import { ErrorToast } from '@/app/components/ErrorToast';
 
 export default function HostDashboardPage() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const hotelProfile = useMemo(
     () => user?.profiles?.find((p) => p.providerType === 'HOTEL_MANAGER') || null,
     [user],
@@ -14,6 +17,9 @@ export default function HostDashboardPage() {
 
   const [packages, setPackages] = useState<HotelPackage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<unknown | null>(null);
+  // const [statusSubmitting, setStatusSubmitting] = useState(false);
 
   useEffect(() => {
     if (hotelProfile) {
@@ -34,6 +40,24 @@ export default function HostDashboardPage() {
       setLoading(false);
     }
   };
+
+  /* Commented out - unused resubmit handler
+  const handleResubmit = async () => {
+    if (!hotelProfile) return;
+    try {
+      setStatusSubmitting(true);
+      setStatusError(null);
+      setStatusMessage(null);
+      await submitProviderOnboarding('HOTEL_MANAGER');
+      setStatusMessage('Resubmitted for review. We will notify you when approved.');
+      await refresh();
+    } catch (err) {
+      setStatusError(err);
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+  */
 
   const stats = useMemo(() => {
     const totalPackages = packages.length;
@@ -80,6 +104,19 @@ export default function HostDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {hotelProfile && <PartnerStatusBanner profile={hotelProfile} />}
+
+      {statusError && (
+        <ErrorToast 
+          error={statusError} 
+          message={formatApiError(statusError)}
+          onDismiss={() => setStatusError(null)}
+        />
+      )}
+      {statusMessage && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">{statusMessage}</div>
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Dashboard Overview</h1>
         <Link

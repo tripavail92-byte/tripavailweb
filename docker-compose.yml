@@ -119,7 +119,7 @@ services:
       NODE_ENV: development
       PORT: 4100
       HOST: 0.0.0.0
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tripavail?schema=public
+      DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
       REDIS_URL: redis://redis:6379

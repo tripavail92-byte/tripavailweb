@@ -8,14 +8,24 @@ export type VerificationStatus =
   | 'REJECTED'
   | 'SUSPENDED';
 
+export type AllowedPropertyType = 'HOTEL' | 'MOTEL' | 'RESORT' | 'INN';
+export type LegacyPropertyType = 'BED_AND_BREAKFAST' | 'HOSTEL' | 'APARTMENT' | 'VILLA';
+export type PropertyType = AllowedPropertyType | LegacyPropertyType;
+
 export interface ProviderProfile {
   id: string;
   providerType: ProviderType;
   businessName?: string | null;
   verificationStatus: VerificationStatus;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  reviewedByAdminId?: string | null;
+  rejectionReason?: string | null;
   onboarding?: {
     currentStep?: number;
-    completedSteps?: { steps: number[] };
+    completedSteps?: number[];
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
   } | null;
 }
 
@@ -35,6 +45,7 @@ export interface Tokens {
 export interface ApiError extends Error {
   status?: number;
   details?: unknown;
+  requestId?: string;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4100';
@@ -113,6 +124,16 @@ export async function apiFetch<T>(
     const error: ApiError = new Error(message);
     error.status = res.status;
     error.details = data;
+    // Extract requestId from error response for support/debugging
+    // Try JSON body first, then fall back to response header
+    if (typeof data === 'object' && data && 'requestId' in data) {
+      error.requestId = (data as { requestId: unknown }).requestId as string | undefined;
+    } else {
+      const headerRequestId = res.headers.get('x-request-id');
+      if (headerRequestId) {
+        error.requestId = headerRequestId;
+      }
+    }
     throw error;
   }
 
@@ -416,7 +437,11 @@ export interface OnboardingStatus {
   totalSteps: number;
   progress: number;
   canSubmit: boolean;
+  verificationStatus?: VerificationStatus;
+  rejectionReason?: string | null;
   submittedAt?: string | null;
+  reviewedAt?: string | null;
+  reviewedByAdminId?: string | null;
   approvedAt?: string | null;
   rejectedAt?: string | null;
   onboardingData?: Record<string, unknown>;
@@ -428,7 +453,7 @@ export async function getProviderOnboardingStatus(providerId: string): Promise<O
 
 export interface HotelStep2BasicsPayload {
   hotelName: string;
-  propertyType: 'HOTEL' | 'RESORT' | 'BED_AND_BREAKFAST' | 'HOSTEL' | 'APARTMENT' | 'VILLA';
+  propertyType: AllowedPropertyType;
   starRating: number;
   description: string;
   contactEmail: string;
@@ -517,6 +542,15 @@ export async function hotelStep7Review(providerId: string, payload: HotelStep7Re
   });
 }
 
+export async function submitProviderOnboarding(providerType: ProviderType) {
+  return apiFetch<{ status: VerificationStatus; submittedAt?: string | null }>(
+    `/v1/provider-onboarding/${providerType}/submit`,
+    {
+      method: 'POST',
+    },
+  );
+}
+
 export interface PropertySnapshot {
   property: {
     id: string;
@@ -549,4 +583,37 @@ export interface PropertySnapshot {
 
 export async function getPropertySnapshot(listingId: string): Promise<PropertySnapshot> {
   return apiFetch<PropertySnapshot>(`/v1/host/properties/${listingId}/snapshot`);
+}
+
+export interface ProviderReviewItem extends ProviderProfile {
+  user?: {
+    email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  };
+  onboarding?: {
+    currentStep?: number;
+    progress?: number;
+    submittedAt?: string | null;
+    approvedAt?: string | null;
+    rejectedAt?: string | null;
+  } | null;
+}
+
+export async function getProviderReviewQueue(status?: 'UNDER_REVIEW' | 'SUBMITTED' | 'REJECTED' | 'APPROVED') {
+  const params = status ? `?status=${status}` : '';
+  return apiFetch<{ providers: ProviderReviewItem[]; count: number }>(
+    `/v1/admin/providers/review-queue${params}`,
+  );
+}
+
+export async function approveProvider(providerId: string) {
+  return apiFetch(`/v1/admin/providers/${providerId}/approve`, { method: 'POST' });
+}
+
+export async function rejectProvider(providerId: string, reason: string) {
+  return apiFetch(`/v1/admin/providers/${providerId}/reject`, {
+    method: 'POST',
+    body: { reason },
+  });
 }

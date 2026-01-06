@@ -54,6 +54,10 @@ model ProviderProfile {
 
   verificationStatus VerificationStatus @default(NOT_STARTED)
   verifiedAt         DateTime?
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
+  reviewedByAdminId  String?
+  rejectionReason    String?
 
   bankName    String?
   bankAccount String?

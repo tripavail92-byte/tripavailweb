@@ -18,6 +18,8 @@ import {
   startProviderOnboarding,
   getProviderOnboardingStatus,
   OnboardingStatus,
+  submitProviderOnboarding,
+  AllowedPropertyType,
 } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -30,6 +32,20 @@ const STEPS = [
   { num: 6, name: 'Policies', description: 'Check-in, cancellation' },
   { num: 7, name: 'Review', description: 'Final submission' },
 ];
+
+const ALLOWED_PROPERTY_TYPES: { value: AllowedPropertyType; label: string }[] = [
+  { value: 'HOTEL', label: 'Hotel' },
+  { value: 'MOTEL', label: 'Motel' },
+  { value: 'RESORT', label: 'Resort' },
+  { value: 'INN', label: 'Inn' },
+];
+
+const LEGACY_PROPERTY_LABELS: Record<string, string> = {
+  BED_AND_BREAKFAST: 'Bed & Breakfast (legacy)',
+  HOSTEL: 'Hostel (legacy)',
+  APARTMENT: 'Apartment (legacy)',
+  VILLA: 'Villa (legacy)',
+};
 
 // Force dynamic rendering - page requires authentication
 export const dynamic = 'force-dynamic';
@@ -45,6 +61,7 @@ export default function HostOnboardingPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [legacyPropertyType, setLegacyPropertyType] = useState<string | null>(null);
 
   const hotelProfile = user?.profiles?.find((p) => p.providerType === 'HOTEL_MANAGER');
   
@@ -102,7 +119,24 @@ export default function HostOnboardingPage() {
   const prefillFromStatus = (data: Record<string, unknown>) => {
     if (data.step2_basics) {
       const step2Data = data.step2_basics as Partial<HotelStep2BasicsPayload>;
-      setStep2((s) => ({ ...s, ...step2Data }));
+      const incomingType = (step2Data.propertyType as string | undefined) || null;
+      const isAllowed = incomingType
+        ? ALLOWED_PROPERTY_TYPES.some((t) => t.value === incomingType)
+        : false;
+
+      if (incomingType && !isAllowed && LEGACY_PROPERTY_LABELS[incomingType]) {
+        setLegacyPropertyType(incomingType);
+        setStep2((s) => ({ ...s, ...step2Data, propertyType: s.propertyType }));
+      } else {
+        setLegacyPropertyType(null);
+        setStep2((s) => ({
+          ...s,
+          ...step2Data,
+          propertyType: (incomingType && isAllowed
+            ? (incomingType as AllowedPropertyType)
+            : s.propertyType),
+        }));
+      }
     }
     if (data.step3_location) {
       const step3Data = data.step3_location as Partial<HotelStep3LocationPayload>;
@@ -248,6 +282,29 @@ export default function HostOnboardingPage() {
     }
   };
 
+  const submitForReview = async () => {
+    const pid = ensureProvider();
+    if (!pid) return setError('Start onboarding to generate a provider id.');
+    if (!onboardingStatus?.canSubmit) {
+      setError('Complete all required steps before submitting for review.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      await submitProviderOnboarding('HOTEL_MANAGER');
+      setSuccess('Submitted for review. We will notify you once reviewed.');
+      await loadOnboardingStatus(pid);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Submission failed';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submitStep2 = (event: FormEvent) => {
     event.preventDefault();
     const pid = ensureProvider();
@@ -296,6 +353,12 @@ export default function HostOnboardingPage() {
 
   const completedSteps = onboardingStatus?.completedSteps || [];
   const progress = onboardingStatus?.progress || 0;
+  const verificationStatus =
+    onboardingStatus?.verificationStatus || hotelProfile?.verificationStatus || 'NOT_STARTED';
+  const rejectionReason = onboardingStatus?.rejectionReason || hotelProfile?.rejectionReason;
+  const submitLocked = verificationStatus === 'UNDER_REVIEW' || verificationStatus === 'APPROVED';
+  const canSubmitForReview = onboardingStatus?.canSubmit && !submitLocked;
+  const canResubmit = verificationStatus === 'REJECTED' && onboardingStatus?.canSubmit;
 
   return (
     <div className="space-y-6">
@@ -356,6 +419,62 @@ export default function HostOnboardingPage() {
       {success && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-green-800 text-sm">{success}</div>
       )}
+
+      <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-xs uppercase text-neutral-500">Verification status</div>
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                  verificationStatus === 'APPROVED'
+                    ? 'bg-green-100 text-green-800'
+                    : verificationStatus === 'UNDER_REVIEW'
+                      ? 'bg-amber-100 text-amber-800'
+                      : verificationStatus === 'REJECTED'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-neutral-100 text-neutral-700'
+                }`}
+              >
+                {verificationStatus}
+              </span>
+              {onboardingStatus?.submittedAt && (
+                <span className="text-xs text-neutral-600">
+                  Submitted {new Date(onboardingStatus.submittedAt).toLocaleString()}
+                </span>
+              )}
+            </div>
+            {rejectionReason && (
+              <p className="mt-1 text-sm text-red-700">Rejection reason: {rejectionReason}</p>
+            )}
+            {verificationStatus === 'UNDER_REVIEW' && (
+              <p className="mt-1 text-xs text-neutral-600">
+                You can keep editing drafts. Publishing remains blocked until approval.
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {canResubmit && (
+              <button
+                onClick={submitForReview}
+                disabled={loading}
+                className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-60"
+              >
+                {loading ? 'Submitting…' : 'Resubmit'}
+              </button>
+            )}
+            {canSubmitForReview && (
+              <button
+                onClick={submitForReview}
+                disabled={loading}
+                className="rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-60"
+              >
+                {loading ? 'Submitting…' : 'Submit for review'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Welcome Step */}
       {currentViewStep === 1 && (
@@ -422,13 +541,23 @@ export default function HostOnboardingPage() {
                 setStep2((s) => ({ ...s, propertyType: e.target.value as HotelStep2BasicsPayload['propertyType'] }))
               }
             >
-              <option value="HOTEL">Hotel</option>
-              <option value="RESORT">Resort</option>
-              <option value="BED_AND_BREAKFAST">B&B</option>
-              <option value="HOSTEL">Hostel</option>
-              <option value="APARTMENT">Apartment</option>
-              <option value="VILLA">Villa</option>
+              {ALLOWED_PROPERTY_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+              {legacyPropertyType && !ALLOWED_PROPERTY_TYPES.some((t) => t.value === legacyPropertyType) && (
+                <option value={legacyPropertyType} disabled>
+                  {LEGACY_PROPERTY_LABELS[legacyPropertyType] || `${legacyPropertyType} (legacy)`}
+                </option>
+              )}
             </select>
+            {legacyPropertyType && (
+              <p className="text-xs text-amber-700">
+                Legacy property type detected ({LEGACY_PROPERTY_LABELS[legacyPropertyType] || legacyPropertyType}).
+                Please choose one of the supported types above for new submissions.
+              </p>
+            )}
             <div>
               <input
                 type="number"
@@ -813,7 +942,7 @@ export default function HostOnboardingPage() {
               className="rounded bg-black px-3 py-1 text-white disabled:opacity-50 text-sm"
               disabled={loading || !providerId || !step7.acceptTerms}
             >
-              {loading ? 'Submitting...' : 'Submit for Review'}
+              {loading ? 'Saving...' : 'Save review step'}
             </button>
           </div>
           <div className="space-y-3">

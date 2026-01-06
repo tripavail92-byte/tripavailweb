@@ -1,27 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-interface Provider {
-  id: string;
-  businessName: string;
-  providerType: 'HOTEL_MANAGER' | 'TOUR_OPERATOR';
-  verificationStatus: string;
-  createdAt: string;
-  user: {
-    email: string | null;
-    firstName: string | null;
-    lastName: string | null;
-  };
-  hotelPackagesCount: number;
-  tourPackagesCount: number;
-}
+import {
+  getProviderReviewQueue,
+  approveProvider,
+  rejectProvider,
+  ProviderReviewItem,
+} from '@/lib/api-client';
+import { formatApiError } from '@/lib/error-utils';
+import { ErrorToast } from '@/app/components/ErrorToast';
 
 export default function AdminProvidersPage() {
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [filter, setFilter] = useState('');
+  const [providers, setProviders] = useState<ProviderReviewItem[]>([]);
+  const [filter, setFilter] = useState<'' | 'UNDER_REVIEW' | 'SUBMITTED' | 'REJECTED' | 'APPROVED'>('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown | null>(null);
 
   useEffect(() => {
     fetchProviders();
@@ -30,62 +23,34 @@ export default function AdminProvidersPage() {
   const fetchProviders = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Not authenticated');
-        setLoading(false);
-        return;
-      }
-
-      const params = new URLSearchParams();
-      if (filter) params.append('verificationStatus', filter);
-
-      const response = await fetch(`http://localhost:4100/v1/admin/providers?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProviders(data.providers);
-        setError(null);
-      } else if (response.status === 404) {
-        setError('Providers endpoint in development');
-        setProviders([]);
-      } else {
-        setError(`Failed to fetch providers: ${response.statusText}`);
-      }
+      const response = await getProviderReviewQueue(filter || undefined);
+      setProviders(response.providers || []);
+      setError(null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Network error');
+      setError(error);
+      setProviders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleStatus = async (providerId: string, currentStatus: string) => {
-    const action = currentStatus === 'APPROVED' ? 'reject' : 'approve';
-    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this provider?`)) return;
-
+  const handleApprove = async (providerId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://localhost:4100/v1/admin/providers/${providerId}/toggle-status`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await approveProvider(providerId);
+      fetchProviders();
+    } catch (err) {
+      setError(err);
+    }
+  };
 
-      if (response.ok) {
-        fetchProviders();
-      } else {
-        alert('Failed to update provider status');
-      }
-    } catch (error) {
-      alert('Error updating provider status');
+  const handleReject = async (providerId: string) => {
+    const reason = prompt('Enter rejection reason');
+    if (!reason) return;
+    try {
+      await rejectProvider(providerId, reason);
+      fetchProviders();
+    } catch (err) {
+      setError(err);
     }
   };
 
@@ -102,27 +67,29 @@ export default function AdminProvidersPage() {
 
   return (
     <div className="space-y-4">
+      {error != null && (
+        <ErrorToast 
+          error={error} 
+          message={formatApiError(error)}
+          onDismiss={() => setError(null)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Provider Management</h1>
-        <div className="flex items-center gap-3">
-          {error && (
-            <div className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded">
-              ⚠️ {error}
-            </div>
-          )}
-          <div className="text-sm text-neutral-600">Total: {providers.length}</div>
-        </div>
+        <div className="text-sm text-neutral-600">Total: {providers.length}</div>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3">
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(e) => setFilter(e.target.value as typeof filter)}
           className="rounded border px-3 py-2 text-sm"
         >
           <option value="">All Statuses</option>
-          <option value="PENDING">Pending Approval</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="SUBMITTED">Submitted</option>
           <option value="APPROVED">Approved</option>
           <option value="REJECTED">Rejected</option>
         </select>
@@ -137,6 +104,8 @@ export default function AdminProvidersPage() {
               <th className="px-4 py-2 text-left text-sm font-semibold">Type</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Contact</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Verification</th>
+              <th className="px-4 py-2 text-left text-sm font-semibold">Submitted</th>
+              <th className="px-4 py-2 text-left text-sm font-semibold">Reason</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Packages</th>
               <th className="px-4 py-2 text-left text-sm font-semibold">Actions</th>
             </tr>
@@ -150,10 +119,10 @@ export default function AdminProvidersPage() {
                 </td>
                 <td className="px-4 py-2 text-sm">
                   <div>
-                    <div className="font-medium">{provider.user.email || 'N/A'}</div>
+                    <div className="font-medium">{provider.user?.email || 'N/A'}</div>
                     <div className="text-xs text-neutral-600">
-                      {provider.user.firstName || provider.user.lastName
-                        ? `${provider.user.firstName || ''} ${provider.user.lastName || ''}`.trim()
+                      {provider.user?.firstName || provider.user?.lastName
+                        ? `${provider.user?.firstName || ''} ${provider.user?.lastName || ''}`.trim()
                         : '—'}
                     </div>
                   </div>
@@ -163,7 +132,7 @@ export default function AdminProvidersPage() {
                     className={`inline-block rounded-full px-2 py-1 text-xs ${
                       provider.verificationStatus === 'APPROVED'
                         ? 'bg-green-100 text-green-800'
-                        : provider.verificationStatus === 'PENDING'
+                        : provider.verificationStatus === 'UNDER_REVIEW' || provider.verificationStatus === 'SUBMITTED'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                     }`}
@@ -171,20 +140,35 @@ export default function AdminProvidersPage() {
                     {provider.verificationStatus}
                   </span>
                 </td>
+                <td className="px-4 py-2 text-sm text-neutral-700">
+                  {provider.submittedAt ? new Date(provider.submittedAt).toLocaleDateString() : '—'}
+                </td>
+                <td className="px-4 py-2 text-sm text-neutral-700">
+                  {provider.rejectionReason ? (
+                    <span className="text-red-700">{provider.rejectionReason}</span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-4 py-2 text-sm">
-                  {provider.hotelPackagesCount + provider.tourPackagesCount}
+                  {typeof (provider as any).hotelPackagesCount === 'number'
+                    ? (provider as any).hotelPackagesCount + ((provider as any).tourPackagesCount || 0)
+                    : '—'}
                 </td>
                 <td className="px-4 py-2 text-sm">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleToggleStatus(provider.id, provider.verificationStatus)}
-                      className={`rounded px-2 py-1 text-xs ${
-                        provider.verificationStatus === 'APPROVED'
-                          ? 'bg-red-100 hover:bg-red-200'
-                          : 'bg-green-100 hover:bg-green-200'
-                      }`}
+                      onClick={() => handleApprove(provider.id)}
+                      disabled={provider.verificationStatus === 'APPROVED'}
+                      className="rounded bg-green-100 px-2 py-1 text-xs text-green-800 hover:bg-green-200 disabled:opacity-50"
                     >
-                      {provider.verificationStatus === 'APPROVED' ? 'Reject' : 'Approve'}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(provider.id)}
+                      className="rounded bg-red-100 px-2 py-1 text-xs text-red-800 hover:bg-red-200"
+                    >
+                      Reject
                     </button>
                   </div>
                 </td>

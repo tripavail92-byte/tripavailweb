@@ -440,6 +440,69 @@ export class AdminController {
     return { success: true, provider: updatedProvider };
   }
 
+  @Post('providers/:providerId/reject')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Reject provider verification' })
+  async rejectProvider(
+    @Param('providerId') providerId: string,
+    @Body() body: { reason?: string },
+    @Request() req: any,
+  ) {
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { id: providerId },
+    });
+
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+
+    const updatedProvider = await this.prisma.providerProfile.update({
+      where: { id: providerId },
+      data: { 
+        verificationStatus: 'REJECTED' as any,
+        rejectionReason: body.reason || 'Rejected by admin',
+      },
+    });
+
+    await this.auditService.log({
+      userId: req.user.id,
+      action: 'PROVIDER_REJECTED',
+      targetType: 'ProviderProfile',
+      targetId: providerId,
+      metadata: { businessName: provider.businessName, reason: body.reason },
+    });
+
+    return { success: true, provider: updatedProvider };
+  }
+
+  @Post('providers/:providerId/approve')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Approve provider verification' })
+  async approveProvider(@Param('providerId') providerId: string, @Request() req: any) {
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { id: providerId },
+    });
+
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+
+    const updatedProvider = await this.prisma.providerProfile.update({
+      where: { id: providerId },
+      data: { verificationStatus: 'APPROVED' as any },
+    });
+
+    await this.auditService.log({
+      userId: req.user.id,
+      action: 'PROVIDER_APPROVED',
+      targetType: 'ProviderProfile',
+      targetId: providerId,
+      metadata: { businessName: provider.businessName },
+    });
+
+    return { success: true, provider: updatedProvider };
+  }
+
   @Get('disputes')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Get all disputes with filters (stub)' })

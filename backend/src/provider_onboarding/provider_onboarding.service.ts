@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { AuditService } from '../audit/audit.service';
 import {
   HotelStep2BasicsDto,
   HotelStep3LocationDto,
@@ -12,11 +13,11 @@ import {
 
 @Injectable()
 export class ProviderOnboardingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   async startOnboarding(userId: string, providerType: 'HOTEL_MANAGER' | 'TOUR_OPERATOR') {
     // Create or get provider profile
-    const profile = await this.prisma.providerProfile.upsert({
+    let profile = await this.prisma.providerProfile.upsert({
       where: {
         userId_providerType: {
           userId,
@@ -30,6 +31,14 @@ export class ProviderOnboardingService {
       },
       update: {},
     });
+
+    // Mark onboarding as in progress on first touch
+    if (profile.verificationStatus === 'NOT_STARTED') {
+      profile = await this.prisma.providerProfile.update({
+        where: { id: profile.id },
+        data: { verificationStatus: 'IN_PROGRESS' },
+      });
+    }
 
     // Create or get onboarding tracker
     const onboarding = await this.prisma.providerOnboarding.upsert({
@@ -92,48 +101,128 @@ export class ProviderOnboardingService {
   }
 
   async submitForReview(providerId: string) {
-    const onboarding = await this.prisma.providerOnboarding.findUnique({
-      where: { providerId },
-      include: { provider: true },
+    const profile = await this.prisma.providerProfile.findUnique({
+      where: { id: providerId },
+      include: { onboarding: true },
     });
 
-    if (!onboarding) {
+    if (!profile || !profile.onboarding) {
       throw new NotFoundException('Onboarding record not found');
     }
 
-    // Determine required steps based on provider type
-    const profile = onboarding.provider;
-    const totalSteps = profile.providerType === 'HOTEL_MANAGER' ? 7 : 14;
+    return this.submitInternal(profile, profile.onboarding, profile.userId);
+  }
 
+  async submitForReviewByType(
+    userId: string,
+    providerType: 'HOTEL_MANAGER' | 'TOUR_OPERATOR',
+  ) {
+    let profile = await this.prisma.providerProfile.findUnique({
+      where: {
+        userId_providerType: {
+          userId,
+          providerType,
+        },
+      },
+      include: { onboarding: true },
+    });
+
+    // Fallback to ensure onboarding row exists even if the upsert was skipped earlier
+    if (!profile) {
+      profile = await this.prisma.providerProfile.findFirst({
+        where: { userId, providerType },
+        include: { onboarding: true },
+      });
+    }
+
+    if (profile && !profile.onboarding) {
+      const onboarding = await this.prisma.providerOnboarding.upsert({
+        where: { providerId: profile.id },
+        create: { providerId: profile.id, currentStep: 1, completedSteps: [] },
+        update: {},
+      });
+      profile = { ...profile, onboarding } as any;
+    }
+
+    if (!profile || !profile.onboarding) {
+      throw new NotFoundException('Onboarding record not found');
+    }
+
+    return this.submitInternal(profile, profile.onboarding, userId);
+  }
+
+  private async submitInternal(profile: any, onboarding: any, actorUserId: string) {
+    const totalSteps = profile.providerType === 'HOTEL_MANAGER' ? 7 : 14;
     const completedSteps = Array.isArray(onboarding.completedSteps)
       ? (onboarding.completedSteps as number[])
       : [];
 
     if (completedSteps.length < totalSteps) {
       throw new BadRequestException(
-        `Complete all ${totalSteps} steps before submitting. ` +
-          `Currently completed: ${completedSteps.length}`,
+        `Complete all ${totalSteps} steps before submitting. Currently completed: ${completedSteps.length}`,
       );
     }
 
-    // Update verification status to SUBMITTED
-    await this.prisma.providerProfile.update({
-      where: { id: providerId },
-      data: { verificationStatus: 'SUBMITTED' },
+    const currentStatus = profile.verificationStatus;
+    const submittedAt = profile.submittedAt || onboarding.submittedAt || new Date();
+
+    if (currentStatus === 'UNDER_REVIEW') {
+      return {
+        success: true,
+        status: 'UNDER_REVIEW',
+        submittedAt,
+      };
+    }
+
+    if (currentStatus === 'APPROVED') {
+      return {
+        success: true,
+        status: 'APPROVED',
+        submittedAt,
+        reviewedAt: profile.reviewedAt,
+        reviewedByAdminId: profile.reviewedByAdminId,
+      };
+    }
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.providerProfile.update({
+        where: { id: profile.id },
+        data: {
+          verificationStatus: 'UNDER_REVIEW',
+          submittedAt,
+          reviewedAt: null,
+          reviewedByAdminId: null,
+          rejectionReason: null,
+        },
+      });
+
+      await tx.providerOnboarding.update({
+        where: { providerId: profile.id },
+        data: {
+          submittedAt,
+          approvedAt: null,
+          rejectedAt: null,
+        },
+      });
     });
 
-    // Mark submission timestamp
-    await this.prisma.providerOnboarding.update({
-      where: { providerId },
-      data: {
-        submittedAt: new Date(),
+    await this.auditService.log({
+      userId: actorUserId,
+      action: 'PROVIDER_SUBMITTED',
+      targetType: 'ProviderProfile',
+      targetId: profile.id,
+      metadata: {
+        providerProfileId: profile.id,
+        providerType: profile.providerType,
+        oldStatus: currentStatus,
+        newStatus: 'UNDER_REVIEW',
       },
     });
 
     return {
       success: true,
-      message: 'Profile submitted for admin review',
-      status: 'SUBMITTED',
+      status: 'UNDER_REVIEW',
+      submittedAt,
     };
   }
 
@@ -159,7 +248,11 @@ export class ProviderOnboardingService {
       totalSteps,
       progress,
       canSubmit: completedSteps.length >= totalSteps,
-      submittedAt: onboarding.submittedAt,
+      verificationStatus: onboarding.provider.verificationStatus,
+      rejectionReason: onboarding.provider.rejectionReason,
+      submittedAt: onboarding.provider.submittedAt || onboarding.submittedAt,
+      reviewedAt: onboarding.provider.reviewedAt,
+      reviewedByAdminId: onboarding.provider.reviewedByAdminId,
       approvedAt: onboarding.approvedAt,
       rejectedAt: onboarding.rejectedAt,
       onboardingData: onboarding.onboardingData, // Include step data for review
@@ -185,11 +278,13 @@ export class ProviderOnboardingService {
         id: profile.id,
         providerType: profile.providerType,
         verificationStatus: profile.verificationStatus,
+        rejectionReason: profile.rejectionReason,
         onboarding: profile.onboarding
           ? {
               currentStep: profile.onboarding.currentStep,
               progress: Math.round((completedSteps.length / totalSteps) * 100),
               submittedAt: profile.onboarding.submittedAt,
+              reviewedAt: profile.reviewedAt,
             }
           : null,
       };

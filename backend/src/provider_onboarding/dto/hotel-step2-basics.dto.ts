@@ -3,11 +3,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export enum PropertyType {
   HOTEL = 'HOTEL',
+  MOTEL = 'MOTEL',
   RESORT = 'RESORT',
-  BED_AND_BREAKFAST = 'BED_AND_BREAKFAST',
-  HOSTEL = 'HOSTEL',
-  APARTMENT = 'APARTMENT',
-  VILLA = 'VILLA',
+  INN = 'INN',
 }
 
 export class HotelStep2BasicsDto {

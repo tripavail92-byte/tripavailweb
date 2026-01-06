@@ -1,36 +1,77 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { DashboardSwitcher } from '@/app/components/DashboardSwitcher';
-import { VerificationBanner } from '@/app/components/VerificationBanner';
+import { PartnerStatusBanner } from '@/app/components/PartnerStatusBanner';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const operatorProfile = useMemo(
     () => user?.profiles?.find((p) => p.providerType === 'TOUR_OPERATOR') || null,
     [user],
   );
+  const hotelProfile = useMemo(
+    () => user?.profiles?.find((p) => p.providerType === 'HOTEL_MANAGER') || null,
+    [user],
+  );
 
   if (loading) return <div className="p-4">Loading session...</div>;
 
+  const isOnboardingRoute = pathname?.startsWith('/operator/onboarding');
+
+  useEffect(() => {
+    if (!loading && !operatorProfile && !isOnboardingRoute && !hotelProfile) {
+      router.replace('/become-a-partner');
+    }
+  }, [loading, operatorProfile, isOnboardingRoute, hotelProfile, router]);
+
   if (!operatorProfile) {
-    return (
-      <div className="p-6">
-        <DashboardSwitcher />
-        <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm">
-          <h1 className="text-xl font-semibold">Become a tour operator</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Create your tour operator profile to unlock the Operator dashboard and publish tours.
-          </p>
-          <Link href="/operator/onboarding" className="mt-4 inline-block rounded-md bg-black px-4 py-2 text-white">
-            Start onboarding
-          </Link>
+    if (isOnboardingRoute) {
+      return (
+        <div className="p-6">
+          <DashboardSwitcher />
+          <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm">
+            <h1 className="text-xl font-semibold">Become a tour operator</h1>
+            <p className="mt-2 text-sm text-neutral-600">
+              Create your tour operator profile to unlock the Operator dashboard and publish tours.
+            </p>
+            <Link href="/operator/onboarding" className="mt-4 inline-block rounded-md bg-black px-4 py-2 text-white">
+              Start onboarding
+            </Link>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (hotelProfile) {
+      return (
+        <div className="p-6">
+          <DashboardSwitcher />
+          <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm">
+            <h1 className="text-xl font-semibold">Operator dashboard requires a tour operator profile</h1>
+            <p className="mt-2 text-sm text-neutral-600">
+              You currently have a hotel profile. Switch dashboards or start operator onboarding.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <Link href="/host" className="rounded-md border px-4 py-2 text-sm hover:bg-neutral-50">
+                Go to Host Dashboard
+              </Link>
+              <Link href="/become-a-partner" className="rounded-md bg-black px-4 py-2 text-sm text-white">
+                Become a Partner
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   }
 
   return (
@@ -52,7 +93,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <VerificationBanner profile={operatorProfile} />
+        <PartnerStatusBanner profile={operatorProfile} />
         {children}
       </main>
     </div>

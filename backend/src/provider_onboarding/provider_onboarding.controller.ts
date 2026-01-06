@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { ProviderOnboardingService } from './provider_onboarding.service';
 import { StartOnboardingDto } from './dto/start-onboarding.dto';
 import { UpdateStepDto } from './dto/update-step.dto';
@@ -42,14 +42,15 @@ export class ProviderOnboardingController {
     return this.service.updateStep(providerId, dto.step, dto.data);
   }
 
-  @Post(':providerId/submit')
+  @Post(':providerType/submit')
   @Roles('TRAVELER', 'ADMIN')
-  @ApiOperation({ summary: 'Submit onboarding for admin review' })
+  @ApiParam({ name: 'providerType', enum: ['HOTEL_MANAGER', 'TOUR_OPERATOR'] })
+  @ApiOperation({ summary: 'Submit onboarding for admin review (by provider type)' })
   @ApiResponse({ status: 200, description: 'Submitted for review' })
   @ApiResponse({ status: 400, description: 'Incomplete steps' })
   @ApiResponse({ status: 404, description: 'Onboarding not found' })
-  async submit(@Param('providerId') providerId: string) {
-    return this.service.submitForReview(providerId);
+  async submit(@CurrentUser() user: any, @Param('providerType') providerType: string) {
+    return this.service.submitForReviewByType(user.id, providerType as 'HOTEL_MANAGER' | 'TOUR_OPERATOR');
   }
 
   @Get(':providerId/status')

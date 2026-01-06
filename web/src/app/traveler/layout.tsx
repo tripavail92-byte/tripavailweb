@@ -22,6 +22,9 @@ export default function TravelerLayout({ children }: { children: React.ReactNode
               <Link href="/traveler/bookings" className="text-neutral-600 hover:text-neutral-900">
                 My Bookings
               </Link>
+              <Link href="/become-a-partner" className="text-neutral-900">
+                Become a Partner
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4 text-sm">
