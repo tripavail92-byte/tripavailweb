@@ -2,7 +2,11 @@
 
 import React, { useEffect } from 'react';
 import { LoadScript } from '@react-google-maps/api';
-import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '@/lib/google-maps-config';
+import {
+  GOOGLE_MAPS_API_KEY,
+  GOOGLE_MAPS_LIBRARIES,
+  isGoogleMapsConfigured,
+} from '@/lib/google-maps-config';
 
 interface GoogleMapsProviderProps {
   children: React.ReactNode;
@@ -26,7 +30,7 @@ export const GoogleMapsProvider: React.FC<GoogleMapsProviderProps> = ({ children
   }
 
   return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={['places']}>
+    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={GOOGLE_MAPS_LIBRARIES}>
       {children}
     </LoadScript>
   );
