@@ -67,7 +67,9 @@ export default function HostPackagesPage() {
       });
       setPackages(response.items || []);
       // Load snapshots for properties
-      const listingIds = [...new Set(response.items.map((p) => p.listingId).filter(Boolean) as string[])];
+      const listingIds = [
+        ...new Set(response.items.map((p) => p.listingId).filter(Boolean) as string[]),
+      ];
       const snapshotPromises = listingIds.map((id) =>
         getPropertySnapshot(id)
           .then((snapshot) => ({ id, snapshot }))
@@ -103,17 +105,18 @@ export default function HostPackagesPage() {
       setLoading(true);
       const pkg = await getHotelPackage(id);
       setSelectedPackage(pkg);
-          setForm({
-            templateId: pkg.templateId || '',
-            listingId: pkg.listingId || '',
-            name: pkg.name || '',
-            description: pkg.description || '',
-            pricePerPerson: pkg.pricePerPerson || 0,
-            availabilityRule: (pkg.availabilityRule as 'WEEKEND_ONLY' | 'SEASONAL' | 'FLEXIBLE') || 'FLEXIBLE',
-            inclusions: [],
-            exclusions: [],
-            amenityIds: [],
-          });
+      setForm({
+        templateId: pkg.templateId || '',
+        listingId: pkg.listingId || '',
+        name: pkg.name || '',
+        description: pkg.description || '',
+        pricePerPerson: pkg.pricePerPerson || 0,
+        availabilityRule:
+          (pkg.availabilityRule as 'WEEKEND_ONLY' | 'SEASONAL' | 'FLEXIBLE') || 'FLEXIBLE',
+        inclusions: [],
+        exclusions: [],
+        amenityIds: [],
+      });
       setViewMode('edit');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load package');
@@ -209,7 +212,9 @@ export default function HostPackagesPage() {
   if (!hotelProfile) {
     return (
       <div className="rounded-lg border bg-white p-4 shadow-sm">
-        <div className="text-sm text-neutral-700">Create a hotel provider profile to manage packages.</div>
+        <div className="text-sm text-neutral-700">
+          Create a hotel provider profile to manage packages.
+        </div>
       </div>
     );
   }
@@ -243,12 +248,21 @@ export default function HostPackagesPage() {
           </button>
         </div>
 
-        {error && <div className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-800">{error}</div>}
+        {error && (
+          <div className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
         {success && (
-          <div className="rounded bg-green-50 border border-green-200 p-3 text-sm text-green-800">{success}</div>
+          <div className="rounded bg-green-50 border border-green-200 p-3 text-sm text-green-800">
+            {success}
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border bg-white p-6 shadow-sm">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 rounded-lg border bg-white p-6 shadow-sm"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <label className="flex flex-col gap-1">
               Template
@@ -326,7 +340,11 @@ export default function HostPackagesPage() {
               <select
                 value={form.availabilityRule}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, availabilityRule: e.target.value as CreateHotelPackagePayload['availabilityRule'] }))
+                  setForm((f) => ({
+                    ...f,
+                    availabilityRule: e.target
+                      .value as CreateHotelPackagePayload['availabilityRule'],
+                  }))
                 }
                 className="rounded border px-3 py-2"
               >
@@ -345,7 +363,10 @@ export default function HostPackagesPage() {
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    inclusions: e.target.value.split('\n').map((v) => v.trim()).filter(Boolean),
+                    inclusions: e.target.value
+                      .split('\n')
+                      .map((v) => v.trim())
+                      .filter(Boolean),
                   }))
                 }
                 className="rounded border px-3 py-2"
@@ -360,7 +381,10 @@ export default function HostPackagesPage() {
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    exclusions: e.target.value.split('\n').map((v) => v.trim()).filter(Boolean),
+                    exclusions: e.target.value
+                      .split('\n')
+                      .map((v) => v.trim())
+                      .filter(Boolean),
                   }))
                 }
                 className="rounded border px-3 py-2"
@@ -374,7 +398,15 @@ export default function HostPackagesPage() {
             Amenity IDs (comma separated)
             <input
               value={form.amenityIds?.join(',') || ''}
-              onChange={(e) => setForm((f) => ({ ...f, amenityIds: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  amenityIds: e.target.value
+                    .split(',')
+                    .map((v) => v.trim())
+                    .filter(Boolean),
+                }))
+              }
               className="rounded border px-3 py-2"
               placeholder="amenity_id1, amenity_id2"
             />
@@ -418,12 +450,24 @@ export default function HostPackagesPage() {
         </button>
       </div>
 
-      {error && <div className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-800">{error}</div>}
+      {error && (
+        <div className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
       {success && (
-        <div className="rounded bg-green-50 border border-green-200 p-3 text-sm text-green-800">{success}</div>
+        <div className="rounded bg-green-50 border border-green-200 p-3 text-sm text-green-800">
+          {success}
+        </div>
       )}
 
       <div className="rounded-lg border bg-white p-4 shadow-sm">
+        {hotelProfile.verificationStatus !== 'APPROVED' && (
+          <div className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+            Publishing is gated until your provider profile is approved. You can still create and
+            edit drafts.
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-4">
           <label className="text-sm font-medium">Filter by status:</label>
           <select
@@ -466,7 +510,9 @@ export default function HostPackagesPage() {
                       </span>
                     </div>
                     {pkg.description && (
-                      <p className="mt-1 text-sm text-neutral-600 line-clamp-2">{pkg.description}</p>
+                      <p className="mt-1 text-sm text-neutral-600 line-clamp-2">
+                        {pkg.description}
+                      </p>
                     )}
                     <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
                       {pkg.pricePerPerson && <span>${pkg.pricePerPerson} per person</span>}
@@ -498,7 +544,7 @@ export default function HostPackagesPage() {
                         <button
                           onClick={() => handleStatusChange(pkg.id, 'publish')}
                           className="rounded bg-green-100 px-3 py-1 text-xs text-green-700"
-                          disabled={loading}
+                          disabled={loading || hotelProfile.verificationStatus !== 'APPROVED'}
                         >
                           Publish
                         </button>
@@ -516,7 +562,7 @@ export default function HostPackagesPage() {
                         <button
                           onClick={() => handleStatusChange(pkg.id, 'publish')}
                           className="rounded bg-green-100 px-3 py-1 text-xs text-green-700"
-                          disabled={loading}
+                          disabled={loading || hotelProfile.verificationStatus !== 'APPROVED'}
                         >
                           Resume
                         </button>

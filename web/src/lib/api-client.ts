@@ -76,7 +76,39 @@ export function setAccessToken(token: string | null) {
   }
 }
 
-function buildHeaders(extra?: HeadersInit): HeadersInit {
+function getIdempotencyKey(): string {
+  // Generate a stable idempotency key for mutating requests
+  try {
+    const g: any = globalThis as any;
+    if (g?.crypto && typeof g.crypto.randomUUID === 'function') {
+      return g.crypto.randomUUID();
+    }
+  } catch {
+    // ignore and fallback
+  }
+  return `idemp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeHeaders(extra?: HeadersInit): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!extra) return out;
+  if (extra instanceof Headers) {
+    for (const [k, v] of extra.entries()) {
+      out[k] = String(v);
+    }
+  } else if (Array.isArray(extra)) {
+    for (const [k, v] of extra) {
+      out[k] = String(v);
+    }
+  } else {
+    Object.entries(extra as Record<string, string>).forEach(([k, v]) => {
+      out[k] = String(v);
+    });
+  }
+  return out;
+}
+
+function buildHeaders(extra?: HeadersInit, method?: string): HeadersInit {
   const base: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -86,7 +118,17 @@ function buildHeaders(extra?: HeadersInit): HeadersInit {
     base.Authorization = `Bearer ${token}`;
   }
 
-  return { ...base, ...(extra || {}) };
+  const headers: Record<string, string> = { ...base, ...normalizeHeaders(extra) };
+
+  // Add Idempotency-Key for mutating requests if not already provided
+  const m = (method || 'GET').toUpperCase();
+  const isMutating = m === 'POST' || m === 'PATCH' || m === 'PUT' || m === 'DELETE';
+  const hasIdempotency = Object.keys(headers).some((k) => k.toLowerCase() === 'idempotency-key');
+  if (isMutating && !hasIdempotency) {
+    headers['Idempotency-Key'] = getIdempotencyKey();
+  }
+
+  return headers;
 }
 
 export async function apiFetch<T>(
@@ -99,7 +141,7 @@ export async function apiFetch<T>(
   try {
     res = await fetch(url, {
       method: opts?.method || 'GET',
-      headers: buildHeaders(opts?.headers),
+      headers: buildHeaders(opts?.headers, opts?.method),
       body: opts?.body ? JSON.stringify(opts.body) : undefined,
       cache: 'no-store',
     });
@@ -600,7 +642,9 @@ export interface ProviderReviewItem extends ProviderProfile {
   } | null;
 }
 
-export async function getProviderReviewQueue(status?: 'UNDER_REVIEW' | 'SUBMITTED' | 'REJECTED' | 'APPROVED') {
+export async function getProviderReviewQueue(
+  status?: 'UNDER_REVIEW' | 'SUBMITTED' | 'REJECTED' | 'APPROVED',
+) {
   const params = status ? `?status=${status}` : '';
   return apiFetch<{ providers: ProviderReviewItem[]; count: number }>(
     `/v1/admin/providers/review-queue${params}`,
