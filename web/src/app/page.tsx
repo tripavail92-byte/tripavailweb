@@ -1,24 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '@/app/providers';
 
 export default function TravelerHome() {
-  const { user } = useAuthContext();
+  const router = useRouter();
+  const { user, loading } = useAuthContext();
   const [location, setLocation] = useState<string>('Islamabad');
   const [destination, setDestination] = useState<string>('');
 
-  const detectLocation = async () => {
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => setLocation('Your Location'),
-        () => setLocation('Islamabad'),
-      );
-    }
-  };
-
-  // Mock featured destinations
+  // Mock featured destinations - MUST be before conditionals
   const destinations = useMemo(
     () => [
       {
@@ -53,7 +46,7 @@ export default function TravelerHome() {
     [],
   );
 
-  // Mock trips data
+  // Mock trips data - MUST be before conditionals
   const trips = useMemo(
     () => [
       {
@@ -107,6 +100,39 @@ export default function TravelerHome() {
     ],
     [],
   );
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/traveler/dashboard');
+    }
+  }, [user, loading, router]);
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-rose-500 border-t-transparent" />
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is logged in, they'll redirect to dashboard in useEffect
+  if (user) {
+    return null;
+  }
+
+  const detectLocation = async () => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => setLocation('Your Location'),
+        () => setLocation('Islamabad'),
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
