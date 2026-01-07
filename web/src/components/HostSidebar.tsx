@@ -11,6 +11,7 @@ export function HostSidebar() {
 
   const menuItems = [
     { icon: '📊', label: 'Dashboard', href: '/host/dashboard' },
+    { icon: '🚀', label: 'Onboarding', href: '/host/onboarding' },
     { icon: '🏨', label: 'Properties', href: '/host/properties' },
     { icon: '📦', label: 'Packages', href: '/host/packages' },
     { icon: '📅', label: 'Bookings', href: '/host/bookings' },
