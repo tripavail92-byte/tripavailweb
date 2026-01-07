@@ -11,7 +11,7 @@ export function OperatorSidebar() {
 
   const menuItems = [
     { icon: '📊', label: 'Dashboard', href: '/operator/dashboard' },
-    { icon: '�', label: 'Onboarding', href: '/operator/onboarding' },
+    { icon: '🚌', label: 'List Your Tours', href: '/operator/onboarding' },
     { icon: '�🚌', label: 'Tours', href: '/operator/tours' },
     { icon: '📅', label: 'Departures', href: '/operator/departures' },
     { icon: '📅', label: 'Bookings', href: '/operator/bookings' },
