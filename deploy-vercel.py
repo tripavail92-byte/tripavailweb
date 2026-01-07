@@ -9,8 +9,15 @@ Database: PostgreSQL on Render (manual setup)
 import requests
 import json
 import time
+import os
+import sys
 
-VERCEL_API_KEY = 'Cg9gfOnLoQbZE6fE6uHxRT5v'
+VERCEL_API_KEY = os.getenv('VERCEL_TOKEN') or os.getenv('VERCEL_API_KEY')
+if not VERCEL_API_KEY:
+    print("ERROR: VERCEL_TOKEN or VERCEL_API_KEY environment variable not set.")
+    print("Set it: $env:VERCEL_TOKEN = '<your-token>'")
+    sys.exit(1)
+
 VERCEL_API_URL = 'https://api.vercel.com'
 
 GITHUB_REPO = 'tripavail92-byte/tripavailweb'
