@@ -6,6 +6,8 @@
 
 export const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
+export const GOOGLE_MAPS_LIBRARIES = ['places'] as const;
+
 export const DEFAULT_MAP_CENTER = {
   lat: 20.5937,
   lng: 78.9629,
@@ -48,5 +50,6 @@ export function isGoogleMapsConfigured(): boolean {
  * Get Google Maps script URL with API key
  */
 export function getGoogleMapsScriptUrl(): string {
-  return `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+  const libs = encodeURIComponent(Array.from(GOOGLE_MAPS_LIBRARIES).join(','));
+  return `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=${libs}`;
 }

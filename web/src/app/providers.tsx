@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { AuthUser } from '@/lib/api-client';
-import { getAuthMe, setAccessToken } from '@/lib/api-client';
+import { getAuthMe, getAccessToken, setAccessToken } from '@/lib/api-client';
 import { GoogleMapsProvider } from '@/components/GoogleMapsProvider';
 
 interface AuthContextValue {
@@ -22,6 +22,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = async () => {
     try {
       setLoading(true);
+      const token = getAccessToken();
+      if (!token) {
+        setUser(null);
+        setError(null);
+        return;
+      }
       const me = await getAuthMe();
       setUser(me);
       setError(null);
