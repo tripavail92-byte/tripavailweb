@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuthContext } from '@/app/providers';
+import { BecomePartnerModal } from '@/components/BecomePartnerModal';
 
 export function DashboardSidebar() {
   const { user } = useAuthContext();
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
 
   const menuItems = [
     { icon: '📊', label: 'Dashboard', href: '/traveler/dashboard' },
@@ -84,19 +87,25 @@ export function DashboardSidebar() {
 
         {/* Partner CTA */}
         <div className="border-t border-gray-200 p-4">
-          <Link
-            href="/host/onboarding"
-            className="block rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-4 text-center text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-pink-200"
+          <button
+            onClick={() => setIsPartnerModalOpen(true)}
+            className="block w-full rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-4 text-center text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-pink-200"
           >
             <div>Become a Partner</div>
             <div className="text-xs font-normal text-white/90">
               Join TripAvail and grow your business
             </div>
-          </Link>
+          </button>
 
           {/* Version */}
           <div className="mt-4 text-center text-xs text-gray-400">Version 1.0.0 · Made with ❤️</div>
         </div>
+
+        {/* Modal */}
+        <BecomePartnerModal
+          isOpen={isPartnerModalOpen}
+          onClose={() => setIsPartnerModalOpen(false)}
+        />
       </div>
     </aside>
   );
