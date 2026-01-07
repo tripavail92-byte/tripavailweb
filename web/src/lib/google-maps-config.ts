@@ -1,3 +1,5 @@
+import type { Library } from '@react-google-maps/api';
+
 /**
  * Google Maps Configuration
  * API key should be set in environment variables
@@ -6,7 +8,7 @@
 
 export const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
-export const GOOGLE_MAPS_LIBRARIES = ['places'] as const;
+export const GOOGLE_MAPS_LIBRARIES: Library[] = ['places'];
 
 export const DEFAULT_MAP_CENTER = {
   lat: 20.5937,
