@@ -23,11 +23,13 @@ export function DashboardSidebar() {
         <div className="border-b border-gray-200 p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-bold text-white">
-              {user?.firstName?.charAt(0) || 'U'}
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900">{user?.firstName || 'User'}</h3>
+                <h3 className="font-semibold text-gray-900">
+                  {user?.email?.split('@')[0] || 'Traveler'}
+                </h3>
                 <button className="text-gray-400 hover:text-gray-600">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -40,9 +42,9 @@ export function DashboardSidebar() {
                 </button>
               </div>
               <p className="text-xs text-gray-500">{user?.email || 'user@example.com'}</p>
-              {user?.country && (
+              {user?.phone && (
                 <p className="mt-1 flex items-center gap-1 text-xs text-gray-600">
-                  <span>📍</span> {user.country}
+                  <span>📍</span> {user.phone}
                 </p>
               )}
             </div>
