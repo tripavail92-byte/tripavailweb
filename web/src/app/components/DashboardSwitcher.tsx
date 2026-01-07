@@ -31,14 +31,13 @@ export function DashboardSwitcher() {
 
   const currentMode: Mode = pathMode || activeMode;
 
+  const isHotelManager = !!user?.profiles?.some((p) => p.providerType === 'HOTEL_MANAGER');
+  const isTourOperator = !!user?.profiles?.some((p) => p.providerType === 'TOUR_OPERATOR');
+
   const modes = [
     { key: 'traveler', label: 'Browse Travel', href: '/' },
-    ...(user.profiles.some((p) => p.providerType === 'HOTEL_MANAGER')
-      ? [{ key: 'host', label: 'Host Dashboard', href: '/host' }]
-      : []),
-    ...(user.profiles.some((p) => p.providerType === 'TOUR_OPERATOR')
-      ? [{ key: 'operator', label: 'Operator Dashboard', href: '/operator' }]
-      : []),
+    ...(isHotelManager ? [{ key: 'host', label: 'Host Dashboard', href: '/host' }] : []),
+    ...(isTourOperator ? [{ key: 'operator', label: 'Operator Dashboard', href: '/operator' }] : []),
   ];
 
   if (!user?.profiles?.length) return null;
