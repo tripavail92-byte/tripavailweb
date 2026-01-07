@@ -1,3 +1,5 @@
+import type { LoadScriptProps } from '@react-google-maps/api';
+
 /**
  * Google Maps Configuration
  * API key should be set in environment variables
@@ -6,7 +8,8 @@
 
 export const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
-export const GOOGLE_MAPS_LIBRARIES: string[] = ['places'];
+// Keep this constant module-scoped so LoadScript does not reload on renders.
+export const GOOGLE_MAPS_LIBRARIES: NonNullable<LoadScriptProps['libraries']> = ['places'];
 
 export const DEFAULT_MAP_CENTER = {
   lat: 20.5937,
