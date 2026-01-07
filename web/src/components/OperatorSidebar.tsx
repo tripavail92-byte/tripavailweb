@@ -10,14 +10,19 @@ export function OperatorSidebar() {
   const operatorProfile = user?.profiles?.[0];
 
   const menuItems = [
-    { icon: '📊', label: 'Dashboard', href: '/operator/dashboard' },
-    { icon: '🚌', label: 'List Your Tours', href: '/operator/onboarding' },
-    { icon: '�🚌', label: 'Tours', href: '/operator/tours' },
-    { icon: '📅', label: 'Departures', href: '/operator/departures' },
-    { icon: '📅', label: 'Bookings', href: '/operator/bookings' },
-    { icon: '📈', label: 'Analytics', href: '/operator/analytics' },
-    { icon: '⚙️', label: 'Settings', href: '/operator/settings' },
-    { icon: '❓', label: 'Help & Support', href: '/operator/support' },
+    { icon: '📊', label: 'Dashboard', href: '/operator/dashboard', subtitle: null },
+    {
+      icon: '🚌',
+      label: 'Tour Operator Setup',
+      href: '/operator/onboarding',
+      subtitle: 'Complete your profile',
+    },
+    { icon: '🚌', label: 'Tours', href: '/operator/tours', subtitle: null },
+    { icon: '📅', label: 'Departures', href: '/operator/departures', subtitle: null },
+    { icon: '📅', label: 'Bookings', href: '/operator/bookings', subtitle: null },
+    { icon: '📈', label: 'Analytics', href: '/operator/analytics', subtitle: null },
+    { icon: '⚙️', label: 'Settings', href: '/operator/settings', subtitle: null },
+    { icon: '❓', label: 'Help & Support', href: '/operator/support', subtitle: null },
   ];
 
   return (
@@ -74,7 +79,10 @@ export function OperatorSidebar() {
               className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
             >
               <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
+              <div className="flex-1">
+                <div>{item.label}</div>
+                {item.subtitle && <div className="text-xs text-gray-500">{item.subtitle}</div>}
+              </div>
             </Link>
           ))}
         </nav>
