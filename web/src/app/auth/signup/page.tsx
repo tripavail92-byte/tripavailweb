@@ -1,7 +1,15 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function SignupRedirectPage() {
-  // Signup is not implemented yet; redirect to login.
-  // Preserve a hint so we can show contextual messaging later via search params if needed.
-  redirect('/auth/login?from=signup');
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to login since signup is not implemented yet
+    router.replace('/auth/login?from=signup');
+  }, [router]);
+
+  return null;
 }
