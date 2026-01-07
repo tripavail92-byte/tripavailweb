@@ -1,0 +1,57 @@
+ TOUR CREATION FLOW (7 Steps)
+┌─────────────────────────────────────────────────────────────┐
+│           TOUR OPERATOR - TOUR CREATION                      │
+└─────────────────────────────────────────────────────────────┘
+
+Tour Operator Dashboard > "Create New Tour"
+        │
+        ▼
+STEP 1: BASICS
+  • Tour Name
+  • Tour Type (City, Adventure, Cultural, Food, Nature)
+  • Duration (hours/days)
+  • Difficulty Level
+  • Languages offered
+        │
+        ▼
+STEP 2: ITINERARY
+  • Day-by-day breakdown
+  • For each day:
+    - Morning activities
+    - Afternoon activities
+    - Evening activities
+    - Meals included
+    - Accommodation (for multi-day)
+  • Add/remove days dynamically
+        │
+        ▼
+STEP 3: PRICING
+  • Per person price
+  • Group pricing (optional)
+  • Min participants
+  • Max participants
+  • Child pricing
+  • Early bird discounts
+        │
+        ▼
+STEP 4: MEDIA
+  • Tour photos
+  • Videos
+  • 360° images (optional)
+        │
+        ▼
+STEP 5: POLICIES
+  • What to bring
+  • Fitness requirements
+  • Age restrictions
+  • Cancellation policy
+        │
+        ▼
+STEP 6: CALENDAR
+  • Set tour dates
+  • Available slots per date
+  • Blackout dates
+        │
+        ▼
+STEP 7: CONFIRMATION
+  • Review & Publish

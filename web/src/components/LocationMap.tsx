@@ -40,14 +40,9 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | undefined>(location);
   const [infoWindowOpen, setInfoWindowOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState(location || center);
-
-  // Update map center when location prop changes
-  useEffect(() => {
-    if (location) {
-      setSelectedLocation(location);
-      setMapCenter({ lat: location.lat, lng: location.lng });
-    }
-  }, [location]);
+  // Derive display values from prop if provided (avoid setState in effects)
+  const displayLocation = location ?? selectedLocation;
+  const displayCenter = location ? { lat: location.lat, lng: location.lng } : mapCenter;
 
   const handleMapClick = useCallback(
     (e: google.maps.MapMouseEvent) => {
@@ -80,7 +75,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({
     <div className="w-full rounded-lg border border-gray-300 overflow-hidden shadow-md">
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={mapCenter}
+        center={displayCenter}
         zoom={zoom}
         onLoad={(map) => {
           mapRef.current = map;
@@ -93,10 +88,10 @@ export const LocationMap: React.FC<LocationMapProps> = ({
           mapTypeControl: true,
         } as any}
       >
-        {selectedLocation && (
+        {displayLocation && (
           <>
             <Marker
-              position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
+              position={{ lat: displayLocation.lat, lng: displayLocation.lng }}
               onClick={handleMarkerClick}
               icon={{
                 path: google.maps.SymbolPath.CIRCLE,
@@ -106,20 +101,20 @@ export const LocationMap: React.FC<LocationMapProps> = ({
                 strokeColor: '#fff',
                 strokeWeight: 2,
               }}
-              title={selectedLocation.label || 'Location'}
+              title={displayLocation.label || 'Location'}
             />
             {showInfoWindow && infoWindowOpen && (
               <InfoWindow
-                position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
+                position={{ lat: displayLocation.lat, lng: displayLocation.lng }}
                 onCloseClick={() => setInfoWindowOpen(false)}
               >
                 <div className="p-3 min-w-[200px]">
-                  <p className="font-semibold text-sm">{selectedLocation.label || 'Location'}</p>
-                  {selectedLocation.address && (
-                    <p className="text-xs text-gray-600 mt-1">{selectedLocation.address}</p>
+                  <p className="font-semibold text-sm">{displayLocation.label || 'Location'}</p>
+                  {displayLocation.address && (
+                    <p className="text-xs text-gray-600 mt-1">{displayLocation.address}</p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                    {displayLocation.lat.toFixed(6)}, {displayLocation.lng.toFixed(6)}
                   </p>
                   {isSelectable && (
                     <p className="text-xs text-blue-600 mt-2 italic">Click to change location</p>
@@ -134,9 +129,9 @@ export const LocationMap: React.FC<LocationMapProps> = ({
       {isSelectable && (
         <div className="bg-blue-50 border-t border-gray-300 p-3">
           <p className="text-xs text-gray-600">
-            {selectedLocation ? (
+            {displayLocation ? (
               <>
-                📍 {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                📍 {displayLocation.lat.toFixed(6)}, {displayLocation.lng.toFixed(6)}
               </>
             ) : (
               'Click on the map to select a location'

@@ -21,8 +21,6 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
     [user],
   );
 
-  if (loading) return <div className="p-4">Loading session...</div>;
-
   const isOnboardingRoute = pathname?.startsWith('/operator/onboarding');
 
   useEffect(() => {
@@ -30,6 +28,8 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
       router.replace('/become-a-partner');
     }
   }, [loading, operatorProfile, isOnboardingRoute, hotelProfile, router]);
+
+  if (loading) return <div className="p-4">Loading session...</div>;
 
   if (!operatorProfile) {
     if (isOnboardingRoute) {

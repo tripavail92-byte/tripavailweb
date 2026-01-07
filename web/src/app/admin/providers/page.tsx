@@ -9,6 +9,8 @@ import {
 } from '@/lib/api-client';
 import { formatApiError } from '@/lib/error-utils';
 import { ErrorToast } from '@/app/components/ErrorToast';
+import { Button } from '@/components/ui';
+import { TableSkeleton, EmptyState } from '@/components/ui';
 
 export default function AdminProvidersPage() {
   const [providers, setProviders] = useState<ProviderReviewItem[]>([]);
@@ -56,10 +58,10 @@ export default function AdminProvidersPage() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-neutral-600">Loading providers...</p>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Provider Management</h1>
+        <div className="rounded-lg border bg-white shadow-sm">
+          <TableSkeleton rows={5} />
         </div>
       </div>
     );
@@ -81,15 +83,15 @@ export default function AdminProvidersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as typeof filter)}
           className="rounded border px-3 py-2 text-sm"
         >
           <option value="">All Statuses</option>
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="SUBMITTED">Submitted</option>
+          <option value="UNDER_REVIEW">Under Review</option>
+          <option value="SUBMITTED">Submitted</option>
           <option value="APPROVED">Approved</option>
           <option value="REJECTED">Rejected</option>
         </select>
@@ -157,19 +159,19 @@ export default function AdminProvidersPage() {
                 </td>
                 <td className="px-4 py-2 text-sm">
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      label="Approve"
                       onClick={() => handleApprove(provider.id)}
+                      variant="primary"
+                      size="sm"
                       disabled={provider.verificationStatus === 'APPROVED'}
-                      className="rounded bg-green-100 px-2 py-1 text-xs text-green-800 hover:bg-green-200 disabled:opacity-50"
-                    >
-                      Approve
-                    </button>
-                    <button
+                    />
+                    <Button
+                      label="Reject"
                       onClick={() => handleReject(provider.id)}
-                      className="rounded bg-red-100 px-2 py-1 text-xs text-red-800 hover:bg-red-200"
-                    >
-                      Reject
-                    </button>
+                      variant="danger"
+                      size="sm"
+                    />
                   </div>
                 </td>
               </tr>
@@ -179,9 +181,11 @@ export default function AdminProvidersPage() {
       </div>
 
       {providers.length === 0 && !loading && (
-        <div className="rounded-lg border bg-white p-6 text-center text-neutral-600">
-          No providers found.
-        </div>
+        <EmptyState 
+          title="No Providers Found"
+          description="There are no providers matching your filter."
+          icon="📋"
+        />
       )}
     </div>
   );

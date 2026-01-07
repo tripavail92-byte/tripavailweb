@@ -7,6 +7,7 @@ import { listHotelPackages, HotelPackage, submitProviderOnboarding } from '@/lib
 import { PartnerStatusBanner } from '@/app/components/PartnerStatusBanner';
 import { formatApiError } from '@/lib/error-utils';
 import { ErrorToast } from '@/app/components/ErrorToast';
+import { Button, CardSkeleton, EmptyState } from '@/components/ui';
 
 export default function HostDashboardPage() {
   const { user, refresh } = useAuth();
@@ -87,23 +88,19 @@ export default function HostDashboardPage() {
 
   if (!hotelProfile) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">Welcome to TripAvail Host</h2>
-          <p className="text-neutral-600">Complete onboarding to start listing your property</p>
-          <Link
-            href="/host/onboarding"
-            className="inline-block rounded-md bg-black px-6 py-3 text-white font-medium"
-          >
-            Start Onboarding
-          </Link>
-        </div>
-      </div>
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <EmptyState 
+          title="Welcome to TripAvail Host"
+          description="Complete onboarding to start listing your property"
+          icon="🏨"
+          action={{ label: "Start Onboarding", onClick: () => window.location.href = "/host/onboarding" }}
+        />
+      </main>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <main className="space-y-6">
       {hotelProfile && <PartnerStatusBanner profile={hotelProfile} />}
 
       {statusError != null && (
@@ -119,16 +116,19 @@ export default function HostDashboardPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Dashboard Overview</h1>
-        <Link
-          href="/host/packages"
-          className="rounded-md bg-black px-4 py-2 text-white text-sm"
-        >
-          Create Package
-        </Link>
+        <Button
+          label="Create Package"
+          onClick={() => window.location.href = "/host/packages"}
+          variant="primary"
+        />
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-sm text-neutral-600">Loading stats...</div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
       ) : (
         <>
           {/* Stats Panels */}
@@ -172,12 +172,12 @@ export default function HostDashboardPage() {
               </Link>
             </div>
             {stats.recentPackages.length === 0 ? (
-              <div className="py-8 text-center text-sm text-neutral-600">
-                No packages yet.{' '}
-                <Link href="/host/packages" className="text-black underline">
-                  Create your first package
-                </Link>
-              </div>
+              <EmptyState 
+                title="No Packages Yet"
+                description="Start creating your first hotel package."
+                icon="📦"
+                action={{ label: "Create Package", onClick: () => window.location.href = "/host/packages" }}
+              />
             ) : (
               <div className="space-y-3">
                 {stats.recentPackages.map((pkg) => (
@@ -245,7 +245,7 @@ export default function HostDashboardPage() {
           </div>
         </>
       )}
-    </div>
+    </main>
   );
 }
 

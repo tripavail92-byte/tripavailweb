@@ -2,6 +2,7 @@ const js = require('@eslint/js');
 const tsParser = require('@typescript-eslint/parser');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 const prettierPlugin = require('eslint-plugin-prettier');
+const reactHooks = require('eslint-plugin-react-hooks');
 
 // CommonJS flat config so ESLint v9 can load without package "type": "module".
 module.exports = [
@@ -34,9 +35,11 @@ module.exports = [
     plugins: {
       '@typescript-eslint': tsPlugin,
       prettier: prettierPlugin,
+      'react-hooks': reactHooks,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/interface-name-prefix': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',

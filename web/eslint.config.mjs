@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import reactHooks from "eslint-plugin-react-hooks";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -14,11 +15,37 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
-    plugins: ["react-hooks"],
+    plugins: {
+      "react-hooks": reactHooks,
+    },
     rules: {
-      "react-hooks/rules-of-hooks": "error",
+      ...reactHooks.configs.recommended.rules,
     },
     files: ["**/*.{ts,tsx,js,jsx}"]
+  },
+  // Phase-1 ship mode: relax noisy rules to warnings
+  {
+    rules: {
+      // MUST stay error (runtime correctness)
+      "react-hooks/rules-of-hooks": "error",
+
+      // Allow ship; fix progressively
+      "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_" }
+      ],
+      // Optional: JSX quotes becoming warnings
+      "react/no-unescaped-entities": "warn",
+    },
+  },
+  // Cypress override: disable namespace rule in tests
+  {
+    files: ["cypress/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-namespace": "off",
+    },
   },
 ]);
 

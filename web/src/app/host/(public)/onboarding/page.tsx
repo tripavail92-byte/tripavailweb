@@ -86,19 +86,7 @@ export default function HostOnboardingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelProfile?.id]);
 
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <p>Checking authentication...</p>
-      </div>
-    );
-  }
-
-  // Will redirect if no user
-  if (!user) {
-    return null;
-  }
+  // (moved auth-based early returns below hooks to satisfy Rules of Hooks)
 
   const loadOnboardingStatus = async (pid: string) => {
     try {
@@ -359,6 +347,20 @@ export default function HostOnboardingPage() {
   const submitLocked = verificationStatus === 'UNDER_REVIEW' || verificationStatus === 'APPROVED';
   const canSubmitForReview = onboardingStatus?.canSubmit && !submitLocked;
   const canResubmit = verificationStatus === 'REJECTED' && onboardingStatus?.canSubmit;
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // Will redirect if no user
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
