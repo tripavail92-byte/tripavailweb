@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button, TableSkeleton, EmptyState } from '@/components/ui';
 
 interface User {
   id: string;
@@ -106,10 +107,10 @@ export default function AdminUsersPage() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-neutral-600">Loading users...</p>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">User Management</h1>
+        <div className="rounded-lg border bg-white shadow-sm">
+          <TableSkeleton rows={5} />
         </div>
       </div>
     );
@@ -130,7 +131,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <input
           type="text"
           placeholder="Search by email or name..."
@@ -139,12 +140,6 @@ export default function AdminUsersPage() {
           onKeyDown={(e) => e.key === 'Enter' && fetchUsers()}
           className="flex-1 rounded border px-3 py-2 text-sm"
         />
-        <button
-          onClick={fetchUsers}
-          className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
-        >
-          Search
-        </button>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -154,6 +149,12 @@ export default function AdminUsersPage() {
           <option value="TRAVELER">Traveler</option>
           <option value="ADMIN">Admin</option>
         </select>
+        <Button
+          label="Search"
+          onClick={fetchUsers}
+          variant="primary"
+          size="sm"
+        />
       </div>
 
       {/* Table */}
@@ -193,19 +194,18 @@ export default function AdminUsersPage() {
                 </td>
                 <td className="px-4 py-2 text-sm">
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      label="Toggle Role"
                       onClick={() => handleToggleRole(user.id, user.role)}
-                      className="rounded bg-blue-100 px-2 py-1 text-xs hover:bg-blue-200"
-                      title="Toggle between TRAVELER and ADMIN"
-                    >
-                      Toggle Role
-                    </button>
-                    <button
+                      variant="secondary"
+                      size="sm"
+                    />
+                    <Button
+                      label="Delete"
                       onClick={() => handleDelete(user.id)}
-                      className="rounded bg-red-100 px-2 py-1 text-xs hover:bg-red-200"
-                    >
-                      Delete
-                    </button>
+                      variant="danger"
+                      size="sm"
+                    />
                   </div>
                 </td>
               </tr>
@@ -215,9 +215,11 @@ export default function AdminUsersPage() {
       </div>
 
       {users.length === 0 && !loading && (
-        <div className="rounded-lg border bg-white p-6 text-center text-neutral-600">
-          No users found.
-        </div>
+        <EmptyState 
+          title="No Users Found"
+          description="There are no users matching your search."
+          icon="👥"
+        />
       )}
     </div>
   );

@@ -19,8 +19,6 @@ export function DashboardSwitcher() {
     }
   }, []);
 
-  if (!user?.profiles?.length) return null;
-
   const pathMode: Mode = pathname.startsWith('/host')
     ? 'host'
     : pathname.startsWith('/operator')
@@ -42,6 +40,8 @@ export function DashboardSwitcher() {
       ? [{ key: 'operator', label: 'Operator Dashboard', href: '/operator' }]
       : []),
   ];
+
+  if (!user?.profiles?.length) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">

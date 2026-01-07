@@ -24,10 +24,6 @@ export default function HostLayout({ children }: { children: React.ReactNode }) 
     [user],
   );
 
-  if (loading) {
-    return <div className="p-4">Loading session...</div>;
-  }
-
   const isOnboardingRoute = pathname?.startsWith('/host/onboarding');
 
   useEffect(() => {
@@ -35,6 +31,10 @@ export default function HostLayout({ children }: { children: React.ReactNode }) 
       router.replace('/become-a-partner');
     }
   }, [loading, hotelProfile, isOnboardingRoute, operatorProfile, router]);
+
+  if (loading) {
+    return <div className="p-4">Loading session...</div>;
+  }
 
   if (!hotelProfile) {
     if (isOnboardingRoute) return <>{children}</>;

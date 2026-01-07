@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuthContext } from '@/app/providers';
 import { useRouter } from 'next/navigation';
 import { apiFetch, getAccessToken } from '@/lib/api-client';
+import { GridSkeleton, EmptyState } from '@/components/ui';
 
 interface HotelPackage {
   id: string;
@@ -159,9 +160,9 @@ export default function DiscoveryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header Section */}
-      <div className="bg-white border-b">
+      <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl font-bold text-gray-900">Discover & Book</h1>
           <p className="text-gray-600 mt-2">Find your perfect getaway or adventure</p>
@@ -188,7 +189,7 @@ export default function DiscoveryPage() {
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
@@ -218,11 +219,7 @@ export default function DiscoveryPage() {
           </div>
 
           {loadingHotel && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-200 rounded-lg h-80 animate-pulse" />
-              ))}
-            </div>
+            <GridSkeleton count={6} columns={3} />
           )}
 
           {errorHotel && !loadingHotel && (
@@ -238,11 +235,11 @@ export default function DiscoveryPage() {
           )}
 
           {!loadingHotel && !errorHotel && hotelPackages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-900">No hotel packages yet</h3>
-              <p className="text-gray-600">Adjust search or pick another package type.</p>
-            </div>
+            <EmptyState 
+              title="No Hotel Packages Yet"
+              description="Adjust your search or pick another package type."
+              icon="🏨"
+            />
           )}
 
           {!loadingHotel && !errorHotel && hotelPackages.length > 0 && (
@@ -306,11 +303,7 @@ export default function DiscoveryPage() {
           </div>
 
           {loadingTour && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-200 rounded-lg h-80 animate-pulse" />
-              ))}
-            </div>
+            <GridSkeleton count={6} columns={3} />
           )}
 
           {errorTour && !loadingTour && (
@@ -326,11 +319,11 @@ export default function DiscoveryPage() {
           )}
 
           {!loadingTour && !errorTour && tourPackages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold text-gray-900">No tour packages yet</h3>
-              <p className="text-gray-600">Try a different search.</p>
-            </div>
+            <EmptyState 
+              title="No Tour Packages Yet"
+              description="Try a different search."
+              icon="🎒"
+            />
           )}
 
           {!loadingTour && !errorTour && tourPackages.length > 0 && (
@@ -379,6 +372,6 @@ export default function DiscoveryPage() {
           )}
         </section>
       </div>
-    </div>
+    </main>
   );
 }

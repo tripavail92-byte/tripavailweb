@@ -1,0 +1,85 @@
+ROLE SWITCHING FLOW
+┌─────────────────────────────────────────────────────────────┐
+│                     ROLE SWITCHING                           │
+└─────────────────────────────────────────────────────────────┘
+
+User in Traveler Mode
+        │
+        │ Click hamburger menu
+        ▼
+┌───────────────────┐
+│ Drawer Opens      │
+│ Shows:            │
+│ - User Profile    │
+│ - Menu Items      │
+│ - "Become Partner"│
+└────────┬──────────┘
+         │ Click "Become a Partner"
+         ▼
+┌───────────────────┐
+│ PartnerSelection  │
+│ Sheet Opens       │
+│ ┌───────────────┐ │
+│ │ Hotel Manager │ │ (Card with icon)
+│ └───────────────┘ │
+│ ┌───────────────┐ │
+│ │ Tour Operator │ │ (Card with icon)
+│ └───────────────┘ │
+└────────┬──────────┘
+         │ User selects "Hotel Manager"
+         ▼
+┌───────────────────┐
+│ POST /api/users/  │
+│ me/switch-role    │
+│ {                 │
+│   role:           │
+│   'hotel_manager' │
+│ }                 │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│ Backend Updates   │
+│ user.role in DB   │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│ Frontend Updates: │
+│ - partnerMode     │
+│ - effectiveRole   │
+│ - currentScreen   │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│ UI Changes:       │
+│ ✓ Bottom nav tabs │
+│ ✓ Drawer items    │
+│ ✓ Button colors   │
+│ ✓ Dashboard       │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│ Hotel Manager     │
+│ Dashboard Loads   │
+│ - Properties      │
+│ - Analytics       │
+│ - Quick Actions   │
+└───────────────────┘
+         │
+         │ To switch back to Traveler
+         ▼
+┌───────────────────┐
+│ Hamburger Menu >  │
+│ "Switch to        │
+│  Traveler Mode"   │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│ Repeat process    │
+│ with role:        │
+│ 'traveler'        │
+└───────────────────┘
