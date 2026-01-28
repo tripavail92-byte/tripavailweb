@@ -42,15 +42,24 @@ const TRAVELER_DRAWER_ITEMS: NavigationItem[] = [
     { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
 ];
 
+import { usePathname } from 'next/navigation';
+
 export function useRoleNavigation() {
     const { activeRole } = useUserStore();
     const { user } = useAuth();
+    const pathname = usePathname();
+
+    // Force role based on URL to prevent race conditions or state desync
+    // URL is the ultimate Source of Truth for navigation context
+    const effectiveRole = pathname?.startsWith('/host') ? 'host'
+        : pathname?.startsWith('/operator') ? 'operator'
+            : activeRole;
 
     const canAccessHost = !!user?.profiles?.some(p => p.providerType === 'HOTEL_MANAGER');
     const canAccessOperator = !!user?.profiles?.some(p => p.providerType === 'TOUR_OPERATOR');
 
     const getDrawerItems = (): NavigationItem[] => {
-        switch (activeRole) {
+        switch (effectiveRole) {
             case 'host':
                 return HOST_DRAWER_ITEMS;
             case 'operator':
@@ -61,7 +70,7 @@ export function useRoleNavigation() {
     };
 
     return {
-        activeRole,
+        activeRole: effectiveRole,
         showBottomTabs: activeRole === 'traveler',
         bottomTabs: TRAVELER_TABS,
         drawerItems: getDrawerItems(),
