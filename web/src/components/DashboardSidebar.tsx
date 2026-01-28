@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuthContext } from '@/app/providers';
 import { BecomePartnerModal } from '@/components/BecomePartnerModal';
 import { useRoleNavigation } from '@/hooks/useRoleNavigation';
+import { DashboardSwitcher } from '@/app/components/DashboardSwitcher';
 
 export function DashboardSidebar() {
   const { user } = useAuthContext();

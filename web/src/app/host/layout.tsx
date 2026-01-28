@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DashboardSwitcher } from '@/app/components/DashboardSwitcher';
 import { PartnerStatusBanner } from '@/app/components/PartnerStatusBanner';
 import { useAuth } from '@/hooks/useAuth';
+import { HostDashboardLayout } from '@/components/HostDashboardLayout';
 
 // Force dynamic rendering - layout uses auth
 export const dynamic = 'force-dynamic';
@@ -64,28 +65,39 @@ export default function HostLayout({ children }: { children: React.ReactNode }) 
     return null;
   }
 
+  // Success view (Host Dashboard)
   return (
     <div className="min-h-screen bg-neutral-50">
-      <header className="border-b bg-white">
+      <header className="border-b bg-white lg:hidden">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <Link href="/host" className="font-semibold">
               Host Dashboard
             </Link>
-            <nav className="flex items-center gap-3 text-sm text-neutral-700">
-              <Link href="/host">Dashboard</Link>
-              <Link href="/host/onboarding">Onboarding</Link>
-              <Link href="/host/properties">Properties</Link>
-              <Link href="/host/packages">Hotel Packages</Link>
-            </nav>
           </div>
-          <DashboardSwitcher />
+          <DashboardSwitcher /> // Keep switcher on mobile header
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">
-        <PartnerStatusBanner profile={hotelProfile} />
-        {children}
-      </main>
+      {/* Desktop uses Sidebar via HostDashboardLayout logic */}
+      <div className="flex">
+        <div className="hidden lg:block">
+          {/* Sidebar is rendered by HostDashboardLayout wrapper in next iteration, 
+               but here we are inside layout.tsx which usually WRAPS pages. 
+               We need to use the HostDashboardLayout component. 
+               Wait, HostDashboardLayout IS a wrapper. */}
+        </div>
+      </div>
+
+      {/* 
+         CORRECT APPROACH: 
+         Replace the entire return with HostDashboardLayout.
+      */}
+      <HostDashboardLayout>
+        <div className="mx-auto max-w-6xl px-4 py-6">
+          <PartnerStatusBanner profile={hotelProfile} />
+          {children}
+        </div>
+      </HostDashboardLayout>
     </div>
   );
 }
