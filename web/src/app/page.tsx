@@ -9,7 +9,7 @@ import { FeaturedToursSection } from '@/components/home/FeaturedToursSection';
 
 export default function TravelerHome() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
   // Note: Previous logic redirected logged-in users to dashboard.
   // The Bible homepage seems to be accessible even if logged in (as a "Browse" mode).
@@ -20,13 +20,13 @@ export default function TravelerHome() {
   // or you can uncomment it if you strictly want to force dashboard.
   /*
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!loading && user) {
       router.push('/traveler/dashboard');
     }
-  }, [user, isLoading, router]);
+  }, [user, loading, router]);
   */
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
         <div className="animate-pulse flex flex-col items-center">
