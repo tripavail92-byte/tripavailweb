@@ -21,7 +21,7 @@ export function SuccessStep() {
             <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                type="spring"
+                transition={{ type: 'spring' }}
                 className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto"
             >
                 <CheckCircle size={40} strokeWidth={3} />
