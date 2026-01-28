@@ -5,6 +5,23 @@ import { useRouter } from 'next/navigation';
 
 import { useUserStore } from '@/store/useUserStore';
 
+const roles = [
+  {
+    id: 'hotel_manager',
+    title: 'Hotel Manager',
+    icon: '🏨',
+    description: 'List properties, manage room inventory, and receive bookings seamlessly.',
+    color: 'from-amber-500 to-orange-500',
+  },
+  {
+    id: 'tour_operator',
+    title: 'Tour Operator',
+    icon: '🚐',
+    description: 'Create tour listings, manage itineraries, and share experiences.',
+    color: 'from-blue-500 to-cyan-500',
+  },
+];
+
 export function BecomePartnerModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [selectedRole, setSelectedRole] = useState<'hotel_manager' | 'tour_operator' | null>(null);
   const router = useRouter();
@@ -47,8 +64,8 @@ export function BecomePartnerModal({ isOpen, onClose }: { isOpen: boolean; onClo
               key={role.id}
               onClick={() => handleRoleSelect(role.id as 'hotel_manager' | 'tour_operator')}
               className={`rounded-lg border-2 p-8 text-left transition ${selectedRole === role.id
-                  ? 'border-gray-900 bg-gray-50'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                ? 'border-gray-900 bg-gray-50'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                 }`}
             >
               <div className="mb-4 text-4xl">{role.icon}</div>
@@ -80,10 +97,10 @@ export function BecomePartnerModal({ isOpen, onClose }: { isOpen: boolean; onClo
             disabled={!selectedRole}
             onClick={handleContinue}
             className={`flex-1 rounded-lg bg-gradient-to-r px-4 py-3 text-center font-semibold text-white transition hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${selectedRole === 'hotel_manager'
-                ? 'from-amber-500 to-orange-500'
-                : selectedRole === 'tour_operator'
-                  ? 'from-blue-500 to-cyan-500'
-                  : 'from-gray-400 to-gray-500'
+              ? 'from-amber-500 to-orange-500'
+              : selectedRole === 'tour_operator'
+                ? 'from-blue-500 to-cyan-500'
+                : 'from-gray-400 to-gray-500'
               }`}
           >
             Continue {selectedRole ? `as ${selectedRole === 'hotel_manager' ? 'Hotel Manager' : 'Tour Operator'}` : ''}
