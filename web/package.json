@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^25.1.0",
     "@types/react": "^19.2.10",
     "canvas-confetti": "^1.9.4",
@@ -22,6 +23,7 @@
     "react-dom": "^19.0.0",
     "styled-jsx": "^5.1.7",
     "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "zustand": "^5.0.10"
   },
@@ -29,13 +31,11 @@
     "node": ">=20.0.0 <21.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "openapi-typescript": "^7.5.1",
-    "tailwindcss": "^4"
+    "openapi-typescript": "^7.5.1"
   }
 }
