@@ -1,8 +1,9 @@
 'use client';
 
 import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { ReactNode } from 'react';
 
-export function HostDashboardLayout({ children }: { children: React.ReactNode }) {
+export function HostDashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex bg-gray-50">
       <DashboardSidebar />
