@@ -1,15 +1,6 @@
 {
-  "version": 2,
-  "buildCommand": "cd backend && pnpm build",
-  "outputDirectory": "backend/dist",
-  "env": {
-    "NODE_ENV": "production",
-    "PORT": "3000"
-  },
-  "functions": {
-    "backend/dist/main.js": {
-      "runtime": "nodejs20.x",
-      "memory": 1024
-    }
-  }
+  "buildCommand": "cd web && npm run build",
+  "outputDirectory": "web/.next",
+  "framework": "nextjs",
+  "installCommand": "cd web && npm install"
 }
