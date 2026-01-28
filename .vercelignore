@@ -1,0 +1,7 @@
+backend
+demofrontend
+scripts
+*.md
+*.txt
+.env
+.env.local
