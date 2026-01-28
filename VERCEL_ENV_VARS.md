@@ -16,11 +16,12 @@ Add these in Vercel Project Settings → Environment Variables (Production scope
 
 ### 1. **NEXT_PUBLIC_API_BASE_URL**
 
-- **Purpose:** Frontend → Backend API base URL
-- **Example (Local Dev):** `http://localhost:4100/v1`
-- **Example (Production):** `https://tripavailweb.onrender.com/v1`
+- **Purpose:** Frontend → Backend API base URL (without /v1; frontend appends it)
+- **Example (Local Dev):** `http://localhost:4100`
+- **Example (Production):** `https://tripavailweb.onrender.com`
 - **Type:** Public (exposed to browser)
 - **Status:** ✅ CRITICAL - without this, API calls will fail
+- **⚠️ Important:** Do NOT include `/v1` in the URL. The frontend code (`api-client.ts`) appends `/v1` to all endpoint paths. Including it twice results in `/v1/v1/auth/login` errors.
 
 ### 2. **NEXT_PUBLIC_GOOGLE_MAPS_API_KEY**
 
@@ -57,14 +58,17 @@ Add these in Vercel Project Settings → Environment Variables (Production scope
 
 ---
 
-## Vercel Project Settings Checklist
+## What to Set on Vercel
 
-- [ ] Root Directory is set to `web`
-- [ ] Environment Variables section populated with required vars above
-- [ ] All NEXT*PUBLIC*\* vars are in **Production** scope
-- [ ] Secrets (if any) are in **Production** scope, marked as "Encrypted"
-- [ ] Auto-deploy is enabled for `main` branch
-- [ ] Git repository linked: `tripavail92-byte/tripavailweb`
+In **Vercel Project Settings → Environment Variables (Production scope)**, set:
+
+### NEXT_PUBLIC_API_BASE_URL = `https://tripavailweb.onrender.com`
+
+✅ **Without** `/v1` — the frontend code appends it automatically.
+
+### NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = `<your-maps-api-key>`
+
+Set via Vercel dashboard (do not share keys in chat).
 
 ---
 

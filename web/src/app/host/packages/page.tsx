@@ -16,6 +16,7 @@ import {
   HotelPackageTemplate,
   PropertySnapshot,
 } from '@/lib/api-client';
+import Link from 'next/link';
 import DiscountSettingsStep from './discount';
 
 type ViewMode = 'list' | 'create' | 'edit';
@@ -442,12 +443,12 @@ export default function HostPackagesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Hotel Packages</h1>
-        <button
-          onClick={() => setViewMode('create')}
+        <Link
+          href="/host/packages/create"
           className="rounded-md bg-black px-4 py-2 text-white"
         >
           Create Package
-        </button>
+        </Link>
       </div>
 
       {error && (
@@ -496,15 +497,14 @@ export default function HostPackagesPage() {
                     <div className="flex items-center gap-3">
                       <h3 className="font-semibold">{pkg.name || 'Untitled Package'}</h3>
                       <span
-                        className={`rounded-full px-2 py-1 text-xs ${
-                          pkg.status === 'PUBLISHED'
-                            ? 'bg-green-100 text-green-800'
-                            : pkg.status === 'PAUSED'
-                              ? 'bg-amber-100 text-amber-800'
-                              : pkg.status === 'ARCHIVED'
-                                ? 'bg-neutral-100 text-neutral-800'
-                                : 'bg-gray-100 text-gray-800'
-                        }`}
+                        className={`rounded-full px-2 py-1 text-xs ${pkg.status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-800'
+                          : pkg.status === 'PAUSED'
+                            ? 'bg-amber-100 text-amber-800'
+                            : pkg.status === 'ARCHIVED'
+                              ? 'bg-neutral-100 text-neutral-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
                       >
                         {pkg.status || 'DRAFT'}
                       </span>

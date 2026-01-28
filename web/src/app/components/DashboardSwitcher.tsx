@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserStore } from '@/store/useUserStore';
 
 export function DashboardSwitcher() {
   const { user } = useAuth();
@@ -50,10 +51,12 @@ export function DashboardSwitcher() {
           href={mode.href}
           onClick={() => {
             const modeKey = mode.key as Mode;
+            // Trigger 3D Flip Animation
+            useUserStore.getState().startFlip();
+            useUserStore.getState().setActiveRole(modeKey);
+
+            // Keep local state for immediate UI feedback (optional)
             setActiveMode(modeKey);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('activeDashboard', modeKey);
-            }
           }}
           className={`rounded-full border px-3 py-1 ${currentMode === mode.key ? 'bg-black text-white' : 'bg-white text-black'}`}
         >
