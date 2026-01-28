@@ -3,9 +3,20 @@
 import { useUserStore } from '@/store/useUserStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export function RoleTransitionWrapper({ children }: { children: React.ReactNode }) {
-    const { activeRole, isFlipping, stopFlip } = useUserStore();
+    const { activeRole, setActiveRole, isFlipping, stopFlip } = useUserStore();
+    const pathname = usePathname();
+
+    // Sync role with URL path (Source of Truth)
+    useEffect(() => {
+        if (pathname?.startsWith('/host') && activeRole !== 'host') {
+            setActiveRole('host');
+        } else if (pathname?.startsWith('/operator') && activeRole !== 'operator') {
+            setActiveRole('operator');
+        }
+    }, [pathname, activeRole, setActiveRole]);
 
     // Sync rotation with role
     useEffect(() => {

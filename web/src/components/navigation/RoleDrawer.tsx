@@ -31,10 +31,14 @@ export function RoleDrawer() {
 
     return (
         <>
-            {/* Hamburger Menu Button */}
+            {/* Hamburger Menu Button 
+                - Hidden on Desktop for Host/Operator (Sidebar takes over) 
+                - Always visible for Traveler or Mobile
+            */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed top-4 left-4 z-30 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+                className={`fixed top-4 left-4 z-30 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow ${(activeRole === 'host' || activeRole === 'operator') ? 'lg:hidden' : ''
+                    }`}
                 aria-label="Open menu"
             >
                 <Menu size={24} className="text-gray-700" />
@@ -93,8 +97,8 @@ export function RoleDrawer() {
                                                     href={item.href}
                                                     onClick={() => setIsOpen(false)}
                                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                                                            ? 'bg-rose-50 text-rose-600 font-semibold'
-                                                            : 'text-gray-700 hover:bg-gray-100'
+                                                        ? 'bg-rose-50 text-rose-600 font-semibold'
+                                                        : 'text-gray-700 hover:bg-gray-100'
                                                         }`}
                                                 >
                                                     <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
