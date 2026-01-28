@@ -33,11 +33,12 @@ export function RoleDrawer() {
         <>
             {/* Hamburger Menu Button 
                 - Hidden on Desktop for Host/Operator (Sidebar takes over) 
+                - EXCEPTION: Always show on Onboarding (where Sidebar is hidden)
                 - Always visible for Traveler or Mobile
             */}
             <button
                 onClick={() => setIsOpen(true)}
-                className={`fixed top-4 left-4 z-30 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow ${(activeRole === 'host' || activeRole === 'operator') ? 'lg:hidden' : ''
+                className={`fixed top-4 left-4 z-30 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow ${((activeRole === 'host' || activeRole === 'operator') && !pathname?.includes('onboarding')) ? 'lg:hidden' : ''
                     }`}
                 aria-label="Open menu"
             >
